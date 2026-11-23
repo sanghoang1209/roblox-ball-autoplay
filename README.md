@@ -1,6 +1,8 @@
 # Roblox Background Auto-Play (macOS)
 
-Tool tự động nhận diện nút **Play** và bấm chơi lại **chạy ngầm 100%** trên macOS (không cần focus cửa sổ Roblox, không nhảy màn hình, không dùng giả lập).
+Tool tự động nhận diện nút **Play** và bấm chơi lại **chạy ngầm 100%** trên macOS (không cần focus cửa sổ Roblox, không nhảy màn hình, không dùng giả lập), hỗ trợ **nhiều chế độ treo khác nhau** thông qua các file cấu hình trong thư mục `profiles/`.
+
+Xem chi tiết kiến trúc và lộ trình phát triển tại [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Yêu cầu quyền trên macOS
 
@@ -10,29 +12,42 @@ Mở **System Settings → Privacy & Security** và cấp 2 quyền sau cho **Te
 
 > **Lưu ý:** Có thể để các app khác (Chrome, VS Code...) đè lên cửa sổ Roblox thoải mái, nhưng **không bấm nút vàng thu nhỏ (Minimize)** cửa sổ Roblox và giữ nó trên cùng Desktop Space.
 
-## Cách test trước khi treo máy
+## Cách sử dụng
 
-1. **Test chuỗi phím ngầm (`\` → `Down` ×3 → `Right` → `Enter` → chờ 0.8s → `Down` → `Enter` → chờ 0.3s → `\`):**
-   ```bash
-   python3 autoplay.py --test-keys
-   ```
-   *(Trong 4 giây đếm ngược, bấm sang cửa sổ khác và quan sát xem Roblox có tự bấm Play, xác nhận cửa sổ thứ 2, rồi tắt khung UI Navigation không. Nếu cửa sổ thứ 2 hiện hơi chậm, tăng `--popup-delay 1.2`.)*
-
-2. **Test nhận diện nút Play khi cửa sổ bị che:**
-   ```bash
-   python3 autoplay.py --check-once
-   ```
-
-## Chạy tự động
-
+### 1. Xem danh sách chế độ treo hiện có
 ```bash
-python3 autoplay.py
+python3 autoplay.py --list-profiles
 ```
 
-### Tùy chọn hữu ích
-- `--popup-delay 0.8`: Số giây chờ cửa sổ thứ 2 hiện lên sau khi bấm Play (mặc định `0.8`).
-- `--interval 3`: Chu kỳ quét (giây), mặc định `3.0`.
-- `--cooldown 12`: Thời gian nghỉ sau khi bấm Play (giây), mặc định `12.0`.
-- `--step-delay 0.22`: Độ trễ giữa mỗi phím mũi tên (giây), mặc định `0.22`.
-- `--afk-interval 480`: Tự bấm nhẹ `Space` chống kick AFK 20 phút (mặc định `480` giây = 8 phút). Dùng `--no-anti-afk` để tắt.
-- `--dry-run`: Chạy quét thử nhưng không bấm phím.
+### 2. Chạy tự động theo chế độ (Profile)
+```bash
+# Chạy chế độ mặc định (profiles/default_play.json)
+python3 autoplay.py
+
+# Chạy một chế độ khác trong profiles/
+python3 autoplay.py --profile <ten_profile>
+```
+
+### 3. Test nhanh trước khi treo máy
+```bash
+# Test chuỗi phím ngầm của profile
+python3 autoplay.py --profile default_play --test-keys
+
+# Test nhận diện nút Play khi cửa sổ bị che
+python3 autoplay.py --profile default_play --check-once
+```
+
+## Cách thêm chế độ treo mới
+
+1. Copy file `profiles/default_play.json` thành một file mới trong `profiles/` (ví dụ: `profiles/ranked.json`).
+2. Đổi `id`, `name` và chỉnh mảng `sequence` theo đúng chuỗi phím UI Navigation của chế độ đó (hỗ trợ `wait:<giây>`, ví dụ `"wait:0.8"`).
+3. Chạy ngay bằng:
+   ```bash
+   python3 autoplay.py --profile ranked
+   ```
+
+## Chạy Unit Test
+
+```bash
+python3 -m unittest discover -s tests -v
+```

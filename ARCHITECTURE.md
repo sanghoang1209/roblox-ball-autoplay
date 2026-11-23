@@ -67,7 +67,7 @@ roblox-ball-autoplay/
     └── test_play_button.py
 ```
 
-> **Hiện trạng hiện tại:** Dự án đang ở **Phase 1 (Prototype)** với [autoplay.py](file:///Users/sanghoang211231/Documents/Project/Personal%20Project/roblox-ball-autoplay/autoplay.py) và [test_bg_key.py](file:///Users/sanghoang211231/Documents/Project/Personal%20Project/roblox-ball-autoplay/test_bg_key.py) nằm ở thư mục gốc. Khi bắt đầu thêm chế độ thứ 2, ta sẽ tách dần code từ `autoplay.py` vào `src/roblox_autoplay/` theo đúng cấu trúc trên.
+> **Hiện trạng hiện tại:** Dự án đã hoàn thành **Phase 2** — tách toàn bộ code vào `src/roblox_autoplay/`, quản lý nhiều chế độ qua `profiles/*.json`, có bộ unit test trong `tests/`, và sẵn sàng bước sang **Phase 3 (Menu Bar / GUI App)**.
 
 ---
 
