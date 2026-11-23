@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "roblox-ball-autoplay"
+version = "0.2.0"
+description = "Background auto-play tool for Roblox on macOS with multi-profile UI Navigation"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "Pillow",
+]
+
+[project.scripts]
+roblox-autoplay = "roblox_autoplay.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
