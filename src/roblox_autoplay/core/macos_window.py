@@ -81,20 +81,24 @@ def _cf_dict_int(cf_dict: int, key_ref: int) -> int | None:
 
 
 def find_roblox_window_id(pid: int) -> tuple[int, tuple[int, int]] | None:
-    """Tìm CGWindowID và kích thước (w, h) của cửa sổ game chính thuộc RobloxPlayer."""
+    """
+    Tìm CGWindowID và kích thước (w, h) của cửa sổ game chính thuộc RobloxPlayer.
+    Ưu tiên cửa sổ đang hiển thị (kCGWindowIsOnscreen == 1) và loại trừ cửa sổ ẩn 500x500 của Roblox.
+    """
     k_pid = _cfstr("kCGWindowOwnerPID")
     k_num = _cfstr("kCGWindowNumber")
     k_layer = _cfstr("kCGWindowLayer")
     k_bounds = _cfstr("kCGWindowBounds")
+    k_onscreen = _cfstr("kCGWindowIsOnscreen")
 
     window_list = _cg.CGWindowListCopyWindowInfo(_K_CG_WINDOW_LIST_OPTION_ALL, 0)
     if not window_list:
-        for k in (k_pid, k_num, k_layer, k_bounds):
+        for k in (k_pid, k_num, k_layer, k_bounds, k_onscreen):
             _cf.CFRelease(k)
         return None
 
     best_wid: int | None = None
-    best_area = 0.0
+    best_rank: tuple[int, int, float] = (-1, -1, 0.0)
     best_size = (0, 0)
 
     try:
@@ -117,16 +121,22 @@ def find_roblox_window_id(pid: int) -> tuple[int, tuple[int, int]] | None:
             if w < 200 or h < 200:
                 continue
 
-            area = w * h
-            if area > best_area:
-                wid = _cf_dict_int(entry, k_num)
-                if wid is not None:
-                    best_area = area
-                    best_wid = wid
-                    best_size = (int(w), int(h))
+            wid = _cf_dict_int(entry, k_num)
+            if wid is None:
+                continue
+
+            is_onscreen = 1 if _cf_dict_int(entry, k_onscreen) == 1 else 0
+            # Roblox tạo 1 cửa sổ ẩn cố định 500x500 (onscreen=None) -> hạ ưu tiên tối đa
+            is_not_dummy = 0 if (not is_onscreen and int(w) == 500 and int(h) == 500) else 1
+            rank = (is_onscreen, is_not_dummy, w * h)
+
+            if rank > best_rank:
+                best_rank = rank
+                best_wid = wid
+                best_size = (int(w), int(h))
     finally:
         _cf.CFRelease(window_list)
-        for k in (k_pid, k_num, k_layer, k_bounds):
+        for k in (k_pid, k_num, k_layer, k_bounds, k_onscreen):
             _cf.CFRelease(k)
 
     if best_wid is None:
@@ -147,7 +157,8 @@ def capture_window(window_id: int) -> Image.Image:
         if res.returncode != 0 or not os.path.exists(tmp_path) or os.path.getsize(tmp_path) == 0:
             err = res.stderr.strip() or "Không chụp được cửa sổ Roblox"
             raise RuntimeError(
-                f"{err}. Hãy kiểm tra quyền Screen Recording và đảm bảo Roblox KHÔNG bị thu nhỏ (Minimize)."
+                f"{err}. Hãy kiểm tra quyền Screen Recording, đảm bảo Roblox KHÔNG bị Minimize "
+                f"và KHÔNG bật Fullscreen sang Desktop Space khác."
             )
         with Image.open(tmp_path) as img:
             return img.convert("RGB")
