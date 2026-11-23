@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <title>Roblox Ball Autoplay — Control Panel</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg-canvas: #0b101b;
+      --bg-card: #131b2c;
+      --bg-card-hover: #19243b;
+      --bg-input: #0e1524;
+      --border: #24324d;
+      --border-active: #4ade80;
+      --text-primary: #f1f5f9;
+      --text-muted: #94a3b8;
+      --brand: #22c55e;
+      --brand-bright: #4ade80;
+      --brand-dark: #15803d;
+      --danger: #ef4444;
+      --danger-dark: #b91c1c;
+      --amber: #f59e0b;
+      --sky: #38bdf8;
+      --scrollbar-thumb: #334155;
+      --scrollbar-track: #0e1524;
+      scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+      accent-color: var(--brand);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      background: var(--bg-canvas);
+      color: var(--text-primary);
+      line-height: 1.5;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    /* Hero Banner */
+    .hero {
+      position: relative;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      min-height: 168px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 28px;
+      background:
+        linear-gradient(95deg, rgba(11, 16, 27, 0.94) 0%, rgba(11, 16, 27, 0.78) 52%, rgba(11, 16, 27, 0.25) 100%),
+        url("/assets/roblox_banner.jpg") center right / cover no-repeat;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .hero-brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      z-index: 1;
+    }
+
+    .roblox-logo {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(74, 222, 128, 0.45);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.28);
+    }
+
+    .hero h1 {
+      font-size: 1.45rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .hero p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-top: 2px;
+    }
+
+    .hero-stats {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+      z-index: 1;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+    }
+
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--text-muted);
+    }
+
+    .status-pill.running .status-dot {
+      background: var(--brand-bright);
+      box-shadow: 0 0 10px var(--brand-bright);
+    }
+
+    .status-pill.cooldown .status-dot {
+      background: var(--amber);
+      box-shadow: 0 0 10px var(--amber);
+    }
+
+    .stat-meta {
+      display: flex;
+      gap: 10px;
+      font-size: 0.82rem;
+      color: #cbd5e1;
+      background: rgba(15, 23, 42, 0.75);
+      padding: 5px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Main Grid */
+    .grid {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 18px;
+    }
+
+    @media (max-width: 820px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .hero {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 14px;
+      }
+      .hero-stats {
+        align-items: flex-start;
+      }
+    }
+
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px 20px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      color: var(--text-primary);
+    }
+
+    /* Mode Selector */
+    .mode-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .mode-card {
+      text-align: left;
+      width: 100%;
+      background: var(--bg-input);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 13px 15px;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+    }
+
+    .mode-card:hover {
+      background: var(--bg-card-hover);
+    }
+
+    .mode-card.active {
+      border-color: var(--border-active);
+      background: rgba(34, 197, 94, 0.08);
+    }
+
+    .mode-card:focus-visible {
+      outline: 3px solid var(--brand-bright);
+      outline-offset: 2px;
+    }
+
+    .mode-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .mode-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .badge {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 2px 9px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .badge-vision {
+      background: rgba(34, 197, 94, 0.16);
+      color: #86efac;
+      border: 1px solid rgba(74, 222, 128, 0.3);
+    }
+
+    .badge-timer {
+      background: rgba(56, 189, 248, 0.16);
+      color: #7dd3fc;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .mode-desc {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    /* Controls */
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: none;
+      border-radius: 11px;
+      padding: 11px 16px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text-primary);
+      background: #1e293b;
+      border: 1px solid var(--border);
+      transition: transform 0.08s ease, background-color 0.15s ease;
+    }
+
+    .btn:hover:not(:disabled) {
+      background: #293548;
+    }
+
+    .btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn:focus-visible {
+      outline: 3px solid var(--brand-bright);
+      outline-offset: 2px;
+    }
+
+    .btn-primary {
+      flex: 1;
+      background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+      border-color: rgba(74, 222, 128, 0.4);
+      color: #052e16;
+      font-weight: 700;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, var(--brand-bright), var(--brand));
+    }
+
+    .btn-danger {
+      flex: 1;
+      background: linear-gradient(135deg, var(--danger), var(--danger-dark));
+      border-color: rgba(248, 113, 113, 0.4);
+      color: #fff;
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      background: linear-gradient(135deg, #f87171, var(--danger));
+    }
+
+    .btn-sm {
+      padding: 6px 11px;
+      font-size: 0.78rem;
+      border-radius: 8px;
+    }
+
+    /* Settings Form */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .field.full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    input[type="number"],
+    input[type="text"],
+    textarea {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 9px 11px;
+      color: var(--text-primary);
+      font-size: 0.88rem;
+      font-family: inherit;
+    }
+
+    textarea {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.8rem;
+      resize: vertical;
+      min-height: 68px;
+    }
+
+    input:focus-visible,
+    textarea:focus-visible {
+      outline: 2px solid var(--brand-bright);
+      outline-offset: 1px;
+      border-color: var(--brand-bright);
+    }
+
+    .switch-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    .switch-row span {
+      font-size: 0.86rem;
+      color: var(--text-primary);
+    }
+
+    input[type="checkbox"][switch] {
+      accent-color: var(--brand);
+      margin: 0;
+      cursor: pointer;
+    }
+
+    input[type="checkbox"][switch]:focus-visible {
+      outline: 3px solid var(--brand-bright);
+      outline-offset: 4px;
+    }
+
+    /* Fallback switch styling for non-Safari browsers without native HTML switch */
+    .no-native-switch input[type="checkbox"][switch] {
+      appearance: none;
+      width: 40px;
+      height: 22px;
+      border-radius: 999px;
+      background: #334155;
+      position: relative;
+      transition: background-color 0.15s ease;
+    }
+
+    .no-native-switch input[type="checkbox"][switch]::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #f8fafc;
+      transition: transform 0.15s ease;
+    }
+
+    .no-native-switch input[type="checkbox"][switch]:checked {
+      background: var(--brand);
+    }
+
+    .no-native-switch input[type="checkbox"][switch]:checked::after {
+      transform: translateX(18px);
+    }
+
+    /* Log Console */
+    .log-box {
+      background: #070b13;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      padding: 12px;
+      height: 200px;
+      overflow-y: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      color: #cbd5e1;
+      white-space: pre-wrap;
+      word-break: break-word;
+      scrollbar-width: thin;
+      scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+    }
+
+    @supports not (scrollbar-color: auto) {
+      .log-box {
+        scrollbar-width: auto;
+      }
+      .log-box::-webkit-scrollbar {
+        width: 8px;
+      }
+      .log-box::-webkit-scrollbar-thumb {
+        background: var(--scrollbar-thumb);
+        border-radius: 4px;
+      }
+      .log-box::-webkit-scrollbar-track {
+        background: var(--scrollbar-track);
+      }
+    }
+
+    .toast {
+      font-size: 0.82rem;
+      min-height: 20px;
+      color: var(--brand-bright);
+    }
+
+    .toast.error {
+      color: #f87171;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Hero Banner with Roblox artwork -->
+    <header class="hero">
+      <div class="hero-brand">
+        <div class="roblox-logo" aria-hidden="true">
+          <svg width="30" height="30" viewBox="0 0 32 32" fill="none">
+            <rect x="6" y="6" width="20" height="20" rx="3" transform="rotate(14 16 16)" fill="#4ade80"/>
+            <rect x="13" y="13" width="6" height="6" rx="1" transform="rotate(14 16 16)" fill="#0b101b"/>
+          </svg>
+        </div>
+        <div>
+          <h1>Roblox Ball Autoplay</h1>
+          <p>Chạy ngầm 100% trên macOS · Không cướp chuột · Nhiều chế độ treo</p>
+        </div>
+      </div>
+
+      <div class="hero-stats">
+        <div id="statusPill" class="status-pill">
+          <span class="status-dot"></span>
+          <span id="statusText">Đang dừng</span>
+        </div>
+        <div class="stat-meta">
+          <span id="robloxBadge">Roblox: Đang kiểm tra...</span>
+          <span>·</span>
+          <span>Đã bấm: <strong id="playCount">0</strong></span>
+        </div>
+      </div>
+    </header>
+
+    <main class="grid">
+      <!-- Left Column: Modes + Controls + Logs -->
+      <div class="stack">
+        <section class="card">
+          <div class="card-header">
+            <h2 class="card-title">1. Chọn chế độ treo</h2>
+          </div>
+          <div id="modeList" class="mode-list"></div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <h2 class="card-title">2. Điều khiển</h2>
+          </div>
+          <div class="btn-row">
+            <button id="toggleRunBtn" class="btn btn-primary" type="button">▶️ Bắt đầu chạy ngầm</button>
+          </div>
+          <div class="btn-row" style="margin-top: 10px;">
+            <button id="testKeysBtn" class="btn" type="button" style="flex: 1;">🧪 Test phím (4s)</button>
+            <button id="checkOnceBtn" class="btn" type="button" style="flex: 1;">📸 Kiểm tra nút Play</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <h2 class="card-title">Nhật ký hoạt động</h2>
+            <button id="clearLogBtn" class="btn btn-sm" type="button">Xóa log</button>
+          </div>
+          <div id="logBox" class="log-box">Sẵn sàng. Hãy chọn chế độ và bấm "Bắt đầu chạy ngầm".</div>
+        </section>
+      </div>
+
+      <!-- Right Column: Quick Settings -->
+      <div class="stack">
+        <section class="card">
+          <div class="card-header">
+            <h2 class="card-title">3. Tinh chỉnh chế độ</h2>
+            <span id="editingProfileId" class="badge badge-vision">default_play</span>
+          </div>
+
+          <form id="settingsForm" class="form-grid">
+            <div class="field">
+              <label for="cooldownSec">Cooldown (giây)</label>
+              <input id="cooldownSec" type="number" min="0" step="5" value="120">
+            </div>
+
+            <div class="field">
+              <label for="scanIntervalSec">Chu kỳ quét (giây)</label>
+              <input id="scanIntervalSec" type="number" min="0.5" step="0.5" value="3">
+            </div>
+
+            <div class="field">
+              <label for="stepDelaySec">Độ trễ phím (giây)</label>
+              <input id="stepDelaySec" type="number" min="0.05" step="0.02" value="0.22">
+            </div>
+
+            <div class="field">
+              <label for="afkIntervalSec">Chống AFK mỗi (giây)</label>
+              <input id="afkIntervalSec" type="number" min="30" step="30" value="480">
+            </div>
+
+            <div class="field full">
+              <label class="switch-row" for="antiAfkEnabled">
+                <span>Tự bấm Space chống kick AFK 20 phút</span>
+                <input id="antiAfkEnabled" type="checkbox" switch checked>
+              </label>
+            </div>
+
+            <div class="field full">
+              <label for="sequenceInput">Chuỗi phím UI Navigation (cách nhau bằng dấu phẩy)</label>
+              <textarea id="sequenceInput" spellcheck="false"></textarea>
+            </div>
+
+            <div class="field full">
+              <div class="btn-row">
+                <button id="saveProfileBtn" class="btn" type="submit" style="flex: 1;">💾 Lưu vào file Profile</button>
+              </div>
+              <div id="toast" class="toast" role="status" aria-live="polite"></div>
+            </div>
+          </form>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    if (!("switch" in HTMLInputElement.prototype)) {
+      document.documentElement.classList.add("no-native-switch");
+    }
+
+    const STATE_LABELS = {
+      STOPPED: "Đang dừng",
+      STARTING: "Đang khởi động...",
+      WAITING_ROBLOX: "Chờ mở Roblox...",
+      WAITING_WINDOW: "Chờ cửa sổ Roblox...",
+      SCANNING: "Đang quét nút Play",
+      PLAYING_SEQUENCE: "Đang gửi phím...",
+      COOLDOWN: "Đang nghỉ Cooldown",
+    };
+
+    let profiles = [];
+    let selectedProfileId = null;
+    let isRunning = false;
+
+    const el = (id) => document.getElementById(id);
+
+    function showToast(msg, isError = false) {
+      const t = el("toast");
+      t.textContent = msg;
+      t.classList.toggle("error", isError);
+    }
+
+    function readFormOverrides() {
+      return {
+        cooldown_sec: Number(el("cooldownSec").value),
+        scan_interval_sec: Number(el("scanIntervalSec").value),
+        step_delay_sec: Number(el("stepDelaySec").value),
+        anti_afk_enabled: el("antiAfkEnabled").checked,
+        anti_afk_interval_sec: Number(el("afkIntervalSec").value),
+        sequence: el("sequenceInput").value,
+      };
+    }
+
+    function fillForm(profile) {
+      el("editingProfileId").textContent = profile.id;
+      el("cooldownSec").value = profile.timing.cooldown_sec;
+      el("scanIntervalSec").value = profile.timing.scan_interval_sec;
+      el("stepDelaySec").value = profile.timing.step_delay_sec;
+      el("antiAfkEnabled").checked = profile.anti_afk.enabled;
+      el("afkIntervalSec").value = profile.anti_afk.interval_sec;
+      el("sequenceInput").value = profile.sequence.join(", ");
+      el("checkOnceBtn").disabled = profile.detector.type === "timer";
+    }
+
+    function renderModes() {
+      const container = el("modeList");
+      container.innerHTML = "";
+      for (const p of profiles) {
+        const isTimer = p.detector.type === "timer";
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "mode-card" + (p.id === selectedProfileId ? " active" : "");
+        btn.innerHTML = `
+          <div class="mode-top">
+            <span class="mode-name"></span>
+            <span class="badge ${isTimer ? "badge-timer" : "badge-vision"}">
+              ${isTimer ? "⏱️ Timer xuyên Fullscreen" : "👁️ Nhận diện nút Play"}
+            </span>
+          </div>
+          <div class="mode-desc"></div>
+        `;
+        btn.querySelector(".mode-name").textContent = p.name;
+        btn.querySelector(".mode-desc").textContent = p.description || p.id;
+        btn.addEventListener("click", () => {
+          selectedProfileId = p.id;
+          fillForm(p);
+          renderModes();
+          showToast("");
+        });
+        container.appendChild(btn);
+      }
+    }
+
+    async function loadProfiles() {
+      const res = await fetch("/api/profiles");
+      const data = await res.json();
+      profiles = data.profiles || [];
+      if (!selectedProfileId && profiles.length > 0) {
+        selectedProfileId = profiles[0].id;
+      }
+      const current = profiles.find((p) => p.id === selectedProfileId) || profiles[0];
+      if (current) {
+        selectedProfileId = current.id;
+        fillForm(current);
+      }
+      renderModes();
+    }
+
+    async function pollStatus() {
+      try {
+        const res = await fetch("/api/status");
+        const st = await res.json();
+        isRunning = Boolean(st.running);
+
+        const pill = el("statusPill");
+        pill.className = "status-pill";
+        if (st.state === "COOLDOWN") pill.classList.add("cooldown");
+        else if (isRunning) pill.classList.add("running");
+
+        el("statusText").textContent = STATE_LABELS[st.state] || st.state;
+        el("playCount").textContent = st.play_count ?? 0;
+        el("robloxBadge").textContent = st.roblox_running
+          ? "Roblox: Đang mở"
+          : "Roblox: Chưa mở";
+
+        const toggleBtn = el("toggleRunBtn");
+        if (isRunning) {
+          toggleBtn.textContent = "⏹️ Dừng chạy ngầm";
+          toggleBtn.className = "btn btn-danger";
+        } else {
+          toggleBtn.textContent = "▶️ Bắt đầu chạy ngầm";
+          toggleBtn.className = "btn btn-primary";
+        }
+
+        if (Array.isArray(st.logs) && st.logs.length > 0) {
+          const box = el("logBox");
+          const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 24;
+          box.textContent = st.logs.join("\n");
+          if (atBottom) box.scrollTop = box.scrollHeight;
+        }
+      } catch (_) {
+        el("statusText").textContent = "Mất kết nối server";
+      }
+    }
+
+    el("toggleRunBtn").addEventListener("click", async () => {
+      showToast("");
+      if (isRunning) {
+        await fetch("/api/stop", { method: "POST" });
+      } else {
+        const res = await fetch("/api/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            profile_id: selectedProfileId,
+            overrides: readFormOverrides(),
+          }),
+        });
+        const data = await res.json();
+        if (!data.ok) showToast(data.error || "Không thể khởi động.", true);
+      }
+      await pollStatus();
+    });
+
+    el("testKeysBtn").addEventListener("click", async () => {
+      showToast("Đang đếm ngược 4 giây để test phím...");
+      const res = await fetch("/api/test-keys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          profile_id: selectedProfileId,
+          overrides: readFormOverrides(),
+        }),
+      });
+      const data = await res.json();
+      if (!data.ok) showToast(data.error || "Lỗi test phím.", true);
+      await pollStatus();
+    });
+
+    el("checkOnceBtn").addEventListener("click", async () => {
+      showToast("Đang kiểm tra cửa sổ Roblox...");
+      const res = await fetch("/api/check-once", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profile_id: selectedProfileId }),
+      });
+      const data = await res.json();
+      if (!data.ok) showToast(data.error || "Lỗi kiểm tra.", true);
+      else showToast(data.message || "Xong!");
+      await pollStatus();
+    });
+
+    el("settingsForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const res = await fetch("/api/save-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          profile_id: selectedProfileId,
+          updates: readFormOverrides(),
+        }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        showToast(data.error || "Không thể lưu profile.", true);
+        return;
+      }
+      showToast("✅ Đã lưu cài đặt vào file profile!");
+      await loadProfiles();
+    });
+
+    el("clearLogBtn").addEventListener("click", async () => {
+      await fetch("/api/clear-logs", { method: "POST" });
+      el("logBox").textContent = "Đã xóa log.";
+    });
+
+    loadProfiles().then(pollStatus);
+    setInterval(pollStatus, 1000);
+  </script>
+</body>
+</html>

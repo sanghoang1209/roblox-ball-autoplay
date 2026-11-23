@@ -77,21 +77,35 @@ class AutoPlayEngine:
         last_play_ts = 0.0
         consecutive_hits = 0
 
+        is_timer_mode = self.profile.detector.type == "timer"
+
         self._log(f"🧩 Profile: {self.profile.name} ({self.profile.id})")
-        self._log(
-            f"🚀 Bắt đầu chạy ngầm! Quét mỗi {timing.scan_interval_sec}s | "
-            f"Chuỗi phím: {' -> '.join(self.profile.sequence)}"
-        )
+        if is_timer_mode:
+            self._log(
+                f"⏱️  Chế độ Timer (chạy xuyên Fullscreen, không chụp màn hình) | "
+                f"Chu kỳ: mỗi {int(timing.cooldown_sec)}s | "
+                f"Chuỗi phím: {' -> '.join(self.profile.sequence)}"
+            )
+        else:
+            self._log(
+                f"🚀 Bắt đầu chạy ngầm! Quét mỗi {timing.scan_interval_sec}s | "
+                f"Cooldown: {int(timing.cooldown_sec)}s | "
+                f"Chuỗi phím: {' -> '.join(self.profile.sequence)}"
+            )
         if self.profile.anti_afk.enabled:
             self._log(
                 f"🛡️  Chống AFK bật (tự bấm '{self.profile.anti_afk.key}' "
                 f"mỗi ~{int(self.profile.anti_afk.interval_sec)}s)"
             )
         if self.dry_run:
-            self._log("🧪 Đang ở chế độ DRY-RUN (chỉ nhận diện, không bấm phím).")
+            self._log("🧪 Đang ở chế độ DRY-RUN (không gửi phím bấm).")
         self._log("   Nhấn Ctrl+C để dừng.")
 
         try:
+            if is_timer_mode:
+                self._log("👉 Bắt đầu gửi chuỗi đầu tiên sau 3 giây...")
+                self._sleep(3.0)
+
             while not self._stop_event.is_set():
                 now = time.time()
                 cur_pid = find_roblox_pid()
@@ -107,15 +121,50 @@ class AutoPlayEngine:
                     self._sleep(5.0)
                     continue
 
-                if cur_pid != pid or wid is None:
-                    win_info = find_roblox_window_id(cur_pid)
-                    if win_info is None:
-                        self._set_state("WAITING_WINDOW")
-                        self._log("⚠️  Chưa tìm thấy cửa sổ chính của Roblox (đảm bảo không bị Minimize).")
-                        self._sleep(3.0)
+                if is_timer_mode:
+                    if cur_pid != pid:
+                        pid = cur_pid
+                        self._log(f"✅ Kết nối RobloxPlayer (PID: {pid}) [Timer mode]")
+
+                    if last_play_ts > 0.0 and (now - last_play_ts) < timing.cooldown_sec:
+                        self._set_state("COOLDOWN")
+                        if not self.dry_run and afk_tracker.is_due():
+                            self._log(f"🛡️  Gửi phím '{self.profile.anti_afk.key}' ngầm chống AFK...")
+                            send_bg_key(pid, self.profile.anti_afk.key)
+                            afk_tracker.mark_triggered()
+                        remaining = timing.cooldown_sec - (now - last_play_ts)
+                        self._sleep(min(timing.scan_interval_sec, remaining))
                         continue
+
+                    self._set_state("PLAYING_SEQUENCE")
+                    self.play_count += 1
+                    if self._on_play_count:
+                        self._on_play_count(self.play_count)
+
+                    self._log(f"⏱️  Đến chu kỳ Timer (#{self.play_count})")
+                    if not self.dry_run:
+                        run_key_sequence(
+                            pid,
+                            self.profile.sequence,
+                            step_delay=timing.step_delay_sec,
+                            on_log=self._log,
+                        )
+                    last_play_ts = time.time()
+                    afk_tracker.mark_activity(last_play_ts)
+                    self._log(f"⏸️  Hẹn lần bấm tiếp theo sau {int(timing.cooldown_sec)}s...")
+                    self._set_state("COOLDOWN")
+                    continue
+
+                win_info = find_roblox_window_id(cur_pid)
+                if win_info is None:
+                    self._set_state("WAITING_WINDOW")
+                    self._log("⚠️  Chưa tìm thấy cửa sổ chính của Roblox (đảm bảo không bị Minimize).")
+                    self._sleep(3.0)
+                    continue
+                new_wid, (ww, wh) = win_info
+                if cur_pid != pid or new_wid != wid:
                     pid = cur_pid
-                    wid, (ww, wh) = win_info
+                    wid = new_wid
                     self._log(f"✅ Kết nối RobloxPlayer (PID: {pid}, WindowID: {wid}, Size: {ww}x{wh})")
                     self._set_state("SCANNING")
 

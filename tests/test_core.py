@@ -38,12 +38,19 @@ def _make_synthetic_lobby(width: int = 1024, height: int = 665, with_button: boo
 class TestProfileLoader(unittest.TestCase):
     def test_list_and_resolve_default_profile(self) -> None:
         profiles = list_profiles()
-        self.assertGreaterEqual(len(profiles), 1)
+        self.assertGreaterEqual(len(profiles), 2)
         prof = resolve_profile("default_play")
         self.assertEqual(prof.id, "default_play")
+        self.assertEqual(prof.timing.cooldown_sec, 120.0)
         self.assertEqual(prof.sequence[0], "backslash")
         self.assertEqual(prof.sequence[-1], "backslash")
         self.assertIn("wait:0.8", prof.sequence)
+
+    def test_resolve_timer_fullscreen_profile(self) -> None:
+        prof = resolve_profile("timer_fullscreen")
+        self.assertEqual(prof.id, "timer_fullscreen")
+        self.assertEqual(prof.detector.type, "timer")
+        self.assertEqual(prof.timing.cooldown_sec, 120.0)
 
     def test_invalid_key_raises(self) -> None:
         with self.assertRaises(ValueError):

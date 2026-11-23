@@ -129,7 +129,7 @@ def main(argv: list[str] | None = None) -> None:
             sys.exit(1)
         profile.sequence = custom_seq
 
-    need_screen = not args.test_keys
+    need_screen = (not args.test_keys) and (profile.detector.type != "timer")
     ok, warnings = check_permissions(need_screen=need_screen)
     if not ok:
         for warn in warnings:
@@ -158,6 +158,12 @@ def main(argv: list[str] | None = None) -> None:
     engine = AutoPlayEngine(profile=profile, dry_run=args.dry_run)
 
     if args.check_once:
+        if profile.detector.type == "timer":
+            default_logger(
+                f"ℹ️  Profile '{profile.id}' đang dùng chế độ Timer (không chụp màn hình). "
+                "Hãy dùng --test-keys để test gửi phím."
+            )
+            return
         pid = find_roblox_pid()
         if pid is None:
             print("❌ Không tìm thấy RobloxPlayer đang chạy. Hãy mở game Roblox trước.")

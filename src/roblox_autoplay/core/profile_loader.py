@@ -23,7 +23,7 @@ class DetectorConfig:
 @dataclass
 class TimingConfig:
     scan_interval_sec: float = 3.0
-    cooldown_sec: float = 180.0
+    cooldown_sec: float = 120.0
     step_delay_sec: float = 0.22
 
 
@@ -79,8 +79,11 @@ def parse_profile_dict(data: dict, source_path: Path | None = None) -> Profile:
     validate_sequence_tokens(sequence)
 
     det_raw = data.get("detector", {})
+    det_type = str(det_raw.get("type", "green_play_button")).strip().lower()
+    if det_type not in ("green_play_button", "timer"):
+        raise ValueError(f"Profile '{profile_id}': detector.type không hợp lệ ('{det_type}').")
     detector = DetectorConfig(
-        type=str(det_raw.get("type", "green_play_button")),
+        type=det_type,
         roi=_validate_roi(det_raw.get("roi", [0.30, 0.84, 0.70, 0.995])),
         min_green_ratio=float(det_raw.get("min_green_ratio", 0.60)),
         min_white_ratio=float(det_raw.get("min_white_ratio", 0.015)),
@@ -90,7 +93,7 @@ def parse_profile_dict(data: dict, source_path: Path | None = None) -> Profile:
     time_raw = data.get("timing", {})
     timing = TimingConfig(
         scan_interval_sec=max(0.2, float(time_raw.get("scan_interval_sec", 3.0))),
-        cooldown_sec=max(0.0, float(time_raw.get("cooldown_sec", 180.0))),
+        cooldown_sec=max(0.0, float(time_raw.get("cooldown_sec", 120.0))),
         step_delay_sec=max(0.05, float(time_raw.get("step_delay_sec", 0.22))),
     )
 
@@ -163,3 +166,48 @@ def resolve_profile(name_or_path: str, profiles_dir: Path = DEFAULT_PROFILES_DIR
     raise FileNotFoundError(
         f"Không tìm thấy profile '{name_or_path}'. Các profile hiện có: {', '.join(available) or '(trống)'}"
     )
+
+
+def profile_to_dict(profile: Profile) -> dict:
+    """Chuyển đối tượng Profile về dict chuẩn JSON."""
+    return {
+        "id": profile.id,
+        "name": profile.name,
+        "description": profile.description,
+        "detector": {
+            "type": profile.detector.type,
+            "roi": list(profile.detector.roi),
+            "min_green_ratio": profile.detector.min_green_ratio,
+            "min_white_ratio": profile.detector.min_white_ratio,
+            "max_white_ratio": profile.detector.max_white_ratio,
+        },
+        "timing": {
+            "scan_interval_sec": profile.timing.scan_interval_sec,
+            "cooldown_sec": profile.timing.cooldown_sec,
+            "step_delay_sec": profile.timing.step_delay_sec,
+        },
+        "sequence": list(profile.sequence),
+        "anti_afk": {
+            "enabled": profile.anti_afk.enabled,
+            "interval_sec": profile.anti_afk.interval_sec,
+            "key": profile.anti_afk.key,
+        },
+        "ball_selection": {
+            "enabled": profile.ball_selection.enabled,
+            "strategy": profile.ball_selection.strategy,
+            "model_path": profile.ball_selection.model_path,
+        },
+    }
+
+
+def save_profile_file(profile: Profile, profiles_dir: Path = DEFAULT_PROFILES_DIR) -> Path:
+    """Validate và lưu Profile ra file JSON trong thư mục profiles/."""
+    data = profile_to_dict(profile)
+    # Re-validate trước khi ghi file
+    parse_profile_dict(data)
+    target = profile.source_path or (profiles_dir / f"{profile.id}.json")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.open("w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+        f.write("\n")
+    return target
