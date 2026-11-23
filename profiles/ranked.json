@@ -1,7 +1,7 @@
 {
   "id": "ranked",
   "name": "Chế độ Ranked (Play Again)",
-  "description": "Nhận diện nút Play Again màu xanh ở màn hình Game Result, bấm \\ -> Down x9 -> Enter -> \\, cooldown 3 phút.",
+  "description": "Nhận diện nút Play Again ở màn hình Game Result (giữa) và màn hình Spectating (góc dưới trái), cooldown 3 phút.",
   "detector": {
     "type": "green_play_button",
     "roi": [0.42, 0.76, 0.68, 0.93],
@@ -9,6 +9,19 @@
     "min_white_ratio": 0.008,
     "max_white_ratio": 0.30
   },
+  "extra_triggers": [
+    {
+      "name": "spectating_play_again",
+      "detector": {
+        "type": "green_play_button",
+        "roi": [0.08, 0.84, 0.34, 0.99],
+        "min_green_ratio": 0.55,
+        "min_white_ratio": 0.008,
+        "max_white_ratio": 0.30
+      },
+      "sequence": null
+    }
+  ],
   "timing": {
     "scan_interval_sec": 3.0,
     "cooldown_sec": 180.0,
