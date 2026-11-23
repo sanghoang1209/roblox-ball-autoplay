@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Roblox Autoplay Mode Profile",
+  "type": "object",
+  "required": ["id", "name", "sequence"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Mã định danh duy nhất của chế độ (không dấu, không khoảng trắng)"
+    },
+    "name": {
+      "type": "string",
+      "description": "Tên hiển thị của chế độ treo"
+    },
+    "description": {
+      "type": "string"
+    },
+    "detector": {
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["green_play_button"] },
+        "roi": {
+          "type": "array",
+          "items": { "type": "number", "minimum": 0, "maximum": 1 },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "min_green_ratio": { "type": "number", "minimum": 0, "maximum": 1 },
+        "min_white_ratio": { "type": "number", "minimum": 0, "maximum": 1 },
+        "max_white_ratio": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "timing": {
+      "type": "object",
+      "properties": {
+        "scan_interval_sec": { "type": "number", "minimum": 0.2 },
+        "cooldown_sec": { "type": "number", "minimum": 0 },
+        "step_delay_sec": { "type": "number", "minimum": 0.05 }
+      }
+    },
+    "sequence": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" },
+      "description": "Chuỗi phím UI Navigation và bước nghỉ wait:<giây>"
+    },
+    "anti_afk": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "interval_sec": { "type": "number", "minimum": 10 },
+        "key": { "type": "string" }
+      }
+    },
+    "ball_selection": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "strategy": { "type": "string", "enum": ["fixed", "ml"] },
+        "model_path": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

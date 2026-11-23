@@ -1,0 +1,40 @@
+{
+  "id": "default_play",
+  "name": "Chế độ mặc định (Play + Xác nhận popup)",
+  "description": "Nhận diện nút Play xanh ở đáy giữa màn hình, bấm UI Navigation 2 bước rồi tắt UI Nav.",
+  "detector": {
+    "type": "green_play_button",
+    "roi": [0.30, 0.84, 0.70, 0.995],
+    "min_green_ratio": 0.60,
+    "min_white_ratio": 0.015,
+    "max_white_ratio": 0.30
+  },
+  "timing": {
+    "scan_interval_sec": 3.0,
+    "cooldown_sec": 180.0,
+    "step_delay_sec": 0.22
+  },
+  "sequence": [
+    "backslash",
+    "down",
+    "down",
+    "down",
+    "right",
+    "enter",
+    "wait:0.8",
+    "down",
+    "enter",
+    "wait:0.3",
+    "backslash"
+  ],
+  "anti_afk": {
+    "enabled": true,
+    "interval_sec": 480,
+    "key": "space"
+  },
+  "ball_selection": {
+    "enabled": false,
+    "strategy": "fixed",
+    "model_path": null
+  }
+}
