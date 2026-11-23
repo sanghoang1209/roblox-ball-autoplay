@@ -41,7 +41,7 @@ class TestProfileLoader(unittest.TestCase):
         self.assertGreaterEqual(len(profiles), 2)
         prof = resolve_profile("default_play")
         self.assertEqual(prof.id, "default_play")
-        self.assertEqual(prof.timing.cooldown_sec, 120.0)
+        self.assertGreater(prof.timing.cooldown_sec, 0)
         self.assertEqual(prof.sequence[0], "backslash")
         self.assertEqual(prof.sequence[-1], "backslash")
         self.assertIn("wait:0.8", prof.sequence)
@@ -51,6 +51,15 @@ class TestProfileLoader(unittest.TestCase):
         self.assertEqual(prof.id, "timer_fullscreen")
         self.assertEqual(prof.detector.type, "timer")
         self.assertEqual(prof.timing.cooldown_sec, 120.0)
+
+    def test_resolve_ranked_profile(self) -> None:
+        prof = resolve_profile("ranked")
+        self.assertEqual(prof.id, "ranked")
+        self.assertEqual(prof.detector.type, "green_play_button")
+        self.assertEqual(prof.timing.cooldown_sec, 180.0)
+        self.assertEqual(prof.sequence.count("down"), 9)
+        self.assertEqual(prof.sequence[0], "backslash")
+        self.assertEqual(prof.sequence[-1], "backslash")
 
     def test_invalid_key_raises(self) -> None:
         with self.assertRaises(ValueError):

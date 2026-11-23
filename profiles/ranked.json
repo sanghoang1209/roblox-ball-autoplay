@@ -1,0 +1,42 @@
+{
+  "id": "ranked",
+  "name": "Chế độ Ranked (Play Again)",
+  "description": "Nhận diện nút Play Again màu xanh ở màn hình Game Result, bấm \\ -> Down x9 -> Enter -> \\, cooldown 3 phút.",
+  "detector": {
+    "type": "green_play_button",
+    "roi": [0.42, 0.76, 0.68, 0.93],
+    "min_green_ratio": 0.55,
+    "min_white_ratio": 0.008,
+    "max_white_ratio": 0.30
+  },
+  "timing": {
+    "scan_interval_sec": 3.0,
+    "cooldown_sec": 180.0,
+    "step_delay_sec": 0.20
+  },
+  "sequence": [
+    "backslash",
+    "down",
+    "down",
+    "down",
+    "down",
+    "down",
+    "down",
+    "down",
+    "down",
+    "down",
+    "enter",
+    "wait:0.3",
+    "backslash"
+  ],
+  "anti_afk": {
+    "enabled": true,
+    "interval_sec": 480,
+    "key": "space"
+  },
+  "ball_selection": {
+    "enabled": false,
+    "strategy": "fixed",
+    "model_path": null
+  }
+}

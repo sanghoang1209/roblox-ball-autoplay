@@ -1,7 +1,7 @@
 PYTHON ?= python3
 PROFILE ?= default_play
 
-.PHONY: help ui ui-plain run timer profiles check test-keys test clean
+.PHONY: help ui ui-plain run ranked timer profiles check test-keys test clean
 
 help: ## Hiển thị danh sách lệnh nhanh
 	@echo "🎮 Roblox Ball Autoplay — Lệnh nhanh (Makefile)"
@@ -18,6 +18,9 @@ ui-plain: ## Mở giao diện Web UI (không kèm caffeinate)
 
 run: ## Chạy treo máy theo PROFILE (mặc định: default_play, chống Sleep/Lock)
 	caffeinate -di $(PYTHON) autoplay.py --profile $(PROFILE)
+
+ranked: ## Chạy nhanh chế độ Ranked (Play Again, cooldown 3 phút)
+	caffeinate -di $(PYTHON) autoplay.py --profile ranked
 
 timer: ## Chạy nhanh chế độ Timer xuyên Fullscreen (chống Sleep)
 	caffeinate -i $(PYTHON) autoplay.py --profile timer_fullscreen
