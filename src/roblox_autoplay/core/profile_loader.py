@@ -42,12 +42,20 @@ class BallSelectionConfig:
 
 
 @dataclass
+class TriggerRule:
+    name: str
+    detector: DetectorConfig
+    sequence: list[str] | None = None
+
+
+@dataclass
 class Profile:
     id: str
     name: str
     sequence: list[str]
     description: str = ""
     detector: DetectorConfig = field(default_factory=DetectorConfig)
+    extra_triggers: list[TriggerRule] = field(default_factory=list)
     timing: TimingConfig = field(default_factory=TimingConfig)
     anti_afk: AntiAfkConfig = field(default_factory=AntiAfkConfig)
     ball_selection: BallSelectionConfig = field(default_factory=BallSelectionConfig)
@@ -114,12 +122,36 @@ def parse_profile_dict(data: dict, source_path: Path | None = None) -> Profile:
         model_path=ball_raw.get("model_path"),
     )
 
+    extra_triggers: list[TriggerRule] = []
+    for idx, trig_raw in enumerate(data.get("extra_triggers", [])):
+        t_name = str(trig_raw.get("name", f"trigger_{idx + 1}")).strip()
+        t_det_raw = trig_raw.get("detector", {})
+        t_det_type = str(t_det_raw.get("type", "green_play_button")).strip().lower()
+        if t_det_type not in ("green_play_button",):
+            raise ValueError(f"Profile '{profile_id}': extra_triggers[{idx}].detector.type không hợp lệ.")
+        t_det = DetectorConfig(
+            type=t_det_type,
+            roi=_validate_roi(t_det_raw.get("roi", [0.30, 0.84, 0.70, 0.995])),
+            min_green_ratio=float(t_det_raw.get("min_green_ratio", 0.55)),
+            min_white_ratio=float(t_det_raw.get("min_white_ratio", 0.008)),
+            max_white_ratio=float(t_det_raw.get("max_white_ratio", 0.30)),
+        )
+        t_seq_raw = trig_raw.get("sequence")
+        t_seq: list[str] | None = None
+        if t_seq_raw is not None:
+            if not isinstance(t_seq_raw, list):
+                raise ValueError(f"Profile '{profile_id}': extra_triggers[{idx}].sequence phải là mảng.")
+            t_seq = [str(tok).strip().lower() for tok in t_seq_raw if str(tok).strip()]
+            validate_sequence_tokens(t_seq)
+        extra_triggers.append(TriggerRule(name=t_name, detector=t_det, sequence=t_seq))
+
     return Profile(
         id=profile_id,
         name=name,
         description=str(data.get("description", "")),
         sequence=sequence,
         detector=detector,
+        extra_triggers=extra_triggers,
         timing=timing,
         anti_afk=anti_afk,
         ball_selection=ball_selection,
@@ -170,7 +202,7 @@ def resolve_profile(name_or_path: str, profiles_dir: Path = DEFAULT_PROFILES_DIR
 
 def profile_to_dict(profile: Profile) -> dict:
     """Chuyển đối tượng Profile về dict chuẩn JSON."""
-    return {
+    result = {
         "id": profile.id,
         "name": profile.name,
         "description": profile.description,
@@ -198,6 +230,22 @@ def profile_to_dict(profile: Profile) -> dict:
             "model_path": profile.ball_selection.model_path,
         },
     }
+    if profile.extra_triggers:
+        result["extra_triggers"] = [
+            {
+                "name": t.name,
+                "detector": {
+                    "type": t.detector.type,
+                    "roi": list(t.detector.roi),
+                    "min_green_ratio": t.detector.min_green_ratio,
+                    "min_white_ratio": t.detector.min_white_ratio,
+                    "max_white_ratio": t.detector.max_white_ratio,
+                },
+                "sequence": list(t.sequence) if t.sequence is not None else None,
+            }
+            for t in profile.extra_triggers
+        ]
+    return result
 
 
 def save_profile_file(profile: Profile, profiles_dir: Path = DEFAULT_PROFILES_DIR) -> Path:

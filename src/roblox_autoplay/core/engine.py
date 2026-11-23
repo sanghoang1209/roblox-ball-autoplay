@@ -59,12 +59,30 @@ class AutoPlayEngine:
     def _sleep(self, seconds: float) -> None:
         self._stop_event.wait(timeout=max(0.0, seconds))
 
-    def detect_once(self, window_id: int, save_debug: str = "") -> DetectionResult:
+    def detect_with_triggers(
+        self, window_id: int, save_debug: str = ""
+    ) -> tuple[DetectionResult, list[str], str]:
+        """Kiểm tra detector chính và tất cả extra_triggers trên cùng 1 ảnh chụp."""
         img = capture_window(window_id)
         if save_debug:
             img.save(save_debug)
             self._log(f"💾 Đã lưu ảnh chụp kiểm tra tại: {save_debug}")
-        return detect_play_button(img, self.profile.detector)
+
+        primary_res = detect_play_button(img, self.profile.detector)
+        if primary_res.found:
+            return primary_res, self.profile.sequence, "primary"
+
+        for trigger in self.profile.extra_triggers:
+            alt_res = detect_play_button(img, trigger.detector)
+            if alt_res.found:
+                seq = trigger.sequence if trigger.sequence is not None else self.profile.sequence
+                return alt_res, seq, trigger.name
+
+        return primary_res, self.profile.sequence, "primary"
+
+    def detect_once(self, window_id: int, save_debug: str = "") -> DetectionResult:
+        res, _, _ = self.detect_with_triggers(window_id, save_debug=save_debug)
+        return res
 
     def run(self) -> None:
         """Chạy vòng lặp quét & tự động bấm cho đến khi `stop()` hoặc Ctrl+C."""
@@ -180,7 +198,7 @@ class AutoPlayEngine:
                     continue
 
                 try:
-                    res = self.detect_once(wid)
+                    res, matched_seq, trigger_name = self.detect_with_triggers(wid)
                 except RuntimeError as exc:
                     self._log(f"⚠️  {exc}")
                     win_info = find_roblox_window_id(pid)
@@ -197,14 +215,15 @@ class AutoPlayEngine:
                         if self._on_play_count:
                             self._on_play_count(self.play_count)
 
+                        tag = f" ({trigger_name})" if trigger_name != "primary" else ""
                         self._log(
-                            f"🎯 Phát hiện nút Play (#{self.play_count}) "
+                            f"🎯 Phát hiện nút Play{tag} (#{self.play_count}) "
                             f"[green={res.green_ratio:.0%}, white={res.white_ratio:.1%}]"
                         )
                         if not self.dry_run:
                             run_key_sequence(
                                 pid,
-                                self.profile.sequence,
+                                matched_seq,
                                 step_delay=timing.step_delay_sec,
                                 on_log=self._log,
                             )

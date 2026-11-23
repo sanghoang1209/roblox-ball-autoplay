@@ -94,10 +94,10 @@ def detect_play_button(
             rel_bbox=rel_bbox,
         )
 
-    if not (0.38 <= center_x_rel <= 0.65):
+    if not (rx0_f <= center_x_rel <= rx1_f):
         return DetectionResult(
             False,
-            f"Vị trí ngang không nằm vùng nút (center_x={center_x_rel:.2f})",
+            f"Vị trí ngang ngoài vùng ROI (center_x={center_x_rel:.2f})",
             aspect_ratio=aspect,
             rel_bbox=rel_bbox,
         )
