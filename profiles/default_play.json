@@ -4,15 +4,20 @@
   "description": "Nhận diện nút Play xanh ở đáy giữa màn hình, bấm UI Navigation 2 bước rồi tắt UI Nav.",
   "detector": {
     "type": "green_play_button",
-    "roi": [0.30, 0.84, 0.70, 0.995],
-    "min_green_ratio": 0.60,
+    "roi": [
+      0.3,
+      0.84,
+      0.7,
+      0.995
+    ],
+    "min_green_ratio": 0.6,
     "min_white_ratio": 0.015,
-    "max_white_ratio": 0.30
+    "max_white_ratio": 0.3
   },
   "timing": {
     "scan_interval_sec": 3.0,
-    "cooldown_sec": 120.0,
-    "step_delay_sec": 0.22
+    "cooldown_sec": 180.0,
+    "step_delay_sec": 0.23
   },
   "sequence": [
     "backslash",
@@ -29,7 +34,7 @@
   ],
   "anti_afk": {
     "enabled": true,
-    "interval_sec": 480,
+    "interval_sec": 480.0,
     "key": "space"
   },
   "ball_selection": {
