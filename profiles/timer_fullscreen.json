@@ -1,0 +1,36 @@
+{
+  "id": "timer_fullscreen",
+  "name": "Chế độ Timer (Chạy xuyên Fullscreen / Space khác)",
+  "description": "Không chụp màn hình — tự gửi chuỗi UI Navigation mỗi 2 phút, chạy được cả khi Safari hoặc app khác mở Fullscreen.",
+  "detector": {
+    "type": "timer"
+  },
+  "timing": {
+    "scan_interval_sec": 5.0,
+    "cooldown_sec": 120.0,
+    "step_delay_sec": 0.22
+  },
+  "sequence": [
+    "backslash",
+    "down",
+    "down",
+    "down",
+    "right",
+    "enter",
+    "wait:0.8",
+    "down",
+    "enter",
+    "wait:0.3",
+    "backslash"
+  ],
+  "anti_afk": {
+    "enabled": true,
+    "interval_sec": 480,
+    "key": "space"
+  },
+  "ball_selection": {
+    "enabled": false,
+    "strategy": "fixed",
+    "model_path": null
+  }
+}

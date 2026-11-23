@@ -18,7 +18,7 @@
     "detector": {
       "type": "object",
       "properties": {
-        "type": { "type": "string", "enum": ["green_play_button"] },
+        "type": { "type": "string", "enum": ["green_play_button", "timer"] },
         "roi": {
           "type": "array",
           "items": { "type": "number", "minimum": 0, "maximum": 1 },
