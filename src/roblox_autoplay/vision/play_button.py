@@ -46,14 +46,14 @@ def detect_play_button(
     g = roi[:, :, 1].astype(np.int16)
     b = roi[:, :, 2].astype(np.int16)
 
-    # Màu xanh lá đặc trưng của nút Play (median RGB ~ 102, 200, 1)
+    # Màu xanh lá đặc trưng của nút Play (lime ~102,200,1) và Play Again (emerald ~46,171,74)
     green_mask = (
-        (g >= 155)
-        & ((g - b) >= 95)
+        (g >= 135)
+        & ((g - b) >= 60)
         & ((g - r) >= 35)
-        & (r >= 40)
+        & (r >= 20)
         & (r <= 175)
-        & (b <= 75)
+        & (b <= 105)
     )
 
     row_density = green_mask.mean(axis=1)
@@ -94,10 +94,10 @@ def detect_play_button(
             rel_bbox=rel_bbox,
         )
 
-    if not (0.40 <= center_x_rel <= 0.60):
+    if not (0.38 <= center_x_rel <= 0.65):
         return DetectionResult(
             False,
-            f"Vị trí ngang không nằm giữa (center_x={center_x_rel:.2f})",
+            f"Vị trí ngang không nằm vùng nút (center_x={center_x_rel:.2f})",
             aspect_ratio=aspect,
             rel_bbox=rel_bbox,
         )
