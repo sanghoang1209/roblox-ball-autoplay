@@ -589,6 +589,13 @@
             </div>
 
             <div class="field full">
+              <label class="switch-row" for="ballSelectionEnabled">
+                <span>Tự động Ban &amp; Pick bóng (OCR + Ranking)</span>
+                <input id="ballSelectionEnabled" type="checkbox" switch>
+              </label>
+            </div>
+
+            <div class="field full">
               <label for="sequenceInput">Chuỗi phím UI Navigation (cách nhau bằng dấu phẩy)</label>
               <textarea id="sequenceInput" spellcheck="false"></textarea>
             </div>
@@ -639,6 +646,7 @@
         step_delay_sec: Number(el("stepDelaySec").value),
         anti_afk_enabled: el("antiAfkEnabled").checked,
         anti_afk_interval_sec: Number(el("afkIntervalSec").value),
+        ball_selection_enabled: el("ballSelectionEnabled").checked,
         sequence: el("sequenceInput").value,
       };
     }
@@ -650,6 +658,7 @@
       el("stepDelaySec").value = profile.timing.step_delay_sec;
       el("antiAfkEnabled").checked = profile.anti_afk.enabled;
       el("afkIntervalSec").value = profile.anti_afk.interval_sec;
+      el("ballSelectionEnabled").checked = Boolean(profile.ball_selection && profile.ball_selection.enabled);
       el("sequenceInput").value = profile.sequence.join(", ");
       el("checkOnceBtn").disabled = profile.detector.type === "timer";
     }

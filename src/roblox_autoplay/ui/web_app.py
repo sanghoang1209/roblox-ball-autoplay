@@ -214,6 +214,8 @@ class AppController:
             profile.anti_afk.enabled = bool(data["anti_afk_enabled"])
         if "anti_afk_interval_sec" in data:
             profile.anti_afk.interval_sec = max(10.0, float(data["anti_afk_interval_sec"]))
+        if "ball_selection_enabled" in data:
+            profile.ball_selection.enabled = bool(data["ball_selection_enabled"])
         if "sequence" in data:
             raw_seq = data["sequence"]
             if isinstance(raw_seq, str):
