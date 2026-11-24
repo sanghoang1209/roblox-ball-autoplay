@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import subprocess
+import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -204,13 +205,100 @@ def ocr_image_macos(image_path: str | Path) -> list[OcrToken]:
     ]
 
 
+_POWERSHELL_OCR_SCRIPT = r"""
+param([string]$ImagePath)
+Add-Type -AssemblyName System.Runtime.WindowsRuntime
+$null = [Windows.Storage.StorageFile, Windows.Storage, ContentType=WindowsRuntime]
+$null = [Windows.Graphics.Imaging.BitmapDecoder, Windows.Graphics.Imaging, ContentType=WindowsRuntime]
+$null = [Windows.Media.Ocr.OcrEngine, Windows.Foundation, ContentType=WindowsRuntime]
+
+$asTaskGeneric = ([System.WindowsRuntimeSystemExtensions].GetMethods() | Where-Object {
+    $_.Name -eq 'AsTask' -and $_.GetParameters().Count -eq 1 -and $_.GetParameters()[0].ParameterType.Name -eq 'IAsyncOperation`1'
+})[0]
+
+function Await($WinRtTask, $ResultType) {
+    $asTask = $asTaskGeneric.MakeGenericMethod($ResultType)
+    $netTask = $asTask.Invoke($null, @($WinRtTask))
+    $netTask.Wait(-1) | Out-Null
+    return $netTask.Result
+}
+
+$file = Await ([Windows.Storage.StorageFile]::GetFileFromPathAsync((Resolve-Path $ImagePath).Path)) ([Windows.Storage.StorageFile])
+$stream = Await ($file.OpenAsync([Windows.Storage.FileAccessMode]::Read)) ([Windows.Storage.Streams.IRandomAccessStream])
+$decoder = Await ([Windows.Graphics.Imaging.BitmapDecoder]::CreateAsync($stream)) ([Windows.Graphics.Imaging.BitmapDecoder])
+$bitmap = Await ($decoder.GetSoftwareBitmapAsync()) ([Windows.Graphics.Imaging.SoftwareBitmap])
+$engine = [Windows.Media.Ocr.OcrEngine]::TryCreateFromUserProfileLanguages()
+$result = Await ($engine.RecognizeAsync($bitmap)) ([Windows.Media.Ocr.OcrResult])
+
+$w = [double]$bitmap.PixelWidth
+$h = [double]$bitmap.PixelHeight
+$out = @()
+foreach ($line in $result.Lines) {
+    if ($line.Words.Count -eq 0) { continue }
+    $minX = ($line.Words | ForEach-Object { $_.BoundingRect.X } | Measure-Object -Minimum).Minimum
+    $minY = ($line.Words | ForEach-Object { $_.BoundingRect.Y } | Measure-Object -Minimum).Minimum
+    $maxX = ($line.Words | ForEach-Object { $_.BoundingRect.X + $_.BoundingRect.Width } | Measure-Object -Maximum).Maximum
+    $maxY = ($line.Words | ForEach-Object { $_.BoundingRect.Y + $_.BoundingRect.Height } | Measure-Object -Maximum).Maximum
+    $out += [PSCustomObject]@{
+        text = $line.Text
+        cx = (($minX + $maxX) / 2.0) / $w
+        cy = (($minY + $maxY) / 2.0) / $h
+        confidence = 1.0
+    }
+}
+ConvertTo-Json -InputObject @($out) -Compress
+"""
+
+
+def ocr_image_windows(image_path: str | Path) -> list[OcrToken]:
+    """Đọc chữ & tọa độ chuẩn hóa (cx, cy) từ ảnh bằng Windows 10/11 WinRT OCR gốc."""
+    res = subprocess.run(
+        [
+            "powershell",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            _POWERSHELL_OCR_SCRIPT,
+            str(Path(image_path).resolve()),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=20,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+    )
+    if res.returncode != 0 or not res.stdout.strip():
+        return []
+    raw_items = json.loads(res.stdout)
+    if isinstance(raw_items, dict):
+        raw_items = [raw_items]
+    return [
+        OcrToken(
+            text=str(item["text"]),
+            cx=float(item["cx"]),
+            cy=float(item["cy"]),
+            confidence=float(item.get("confidence", 1.0)),
+        )
+        for item in raw_items
+    ]
+
+
+def ocr_image(image_path: str | Path) -> list[OcrToken]:
+    """Chạy OCR gốc theo hệ điều hành (Apple Vision trên macOS, WinRT OCR trên Windows)."""
+    if sys.platform == "win32":
+        return ocr_image_windows(image_path)
+    if sys.platform == "darwin":
+        return ocr_image_macos(image_path)
+    return []
+
+
 def ocr_pil_image(img: Image.Image) -> list[OcrToken]:
     """Chạy OCR trên một ảnh PIL.Image (dùng file tạm và xóa ngay lập tức)."""
     fd, tmp_path = tempfile.mkstemp(prefix="roblox_ocr_", suffix=".png")
     os.close(fd)
     try:
         img.save(tmp_path)
-        return ocr_image_macos(tmp_path)
+        return ocr_image(tmp_path)
     finally:
         if os.path.exists(tmp_path):
             try:
