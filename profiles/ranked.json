@@ -19,7 +19,13 @@
         "min_white_ratio": 0.008,
         "max_white_ratio": 0.30
       },
-      "sequence": null
+      "sequence": [
+        "backslash",
+        "left",
+        "enter",
+        "wait:0.3",
+        "backslash"
+      ]
     }
   ],
   "timing": {
