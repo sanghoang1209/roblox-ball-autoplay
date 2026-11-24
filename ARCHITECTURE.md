@@ -1,73 +1,71 @@
 # Kiến Trúc & Cấu Trúc Dự Án — `roblox-ball-autoplay`
 
-Tài liệu này định nghĩa cấu trúc thư mục, phân tách module và lộ trình mở rộng cho dự án **Roblox Ball Autoplay** trên macOS, nhằm đảm bảo dễ bảo trì khi phát triển lên:
-1. **Nhiều chế độ treo máy** (mỗi chế độ có chuỗi UI Navigation & điều kiện nhận diện riêng).
-2. **Đóng gói thành macOS App có giao diện (GUI / Menu Bar)** để bật/tắt nhanh.
-3. **Module Machine Learning (ML)** tự động thu thập dữ liệu, train và chọn loại bóng phù hợp nhất.
+Tài liệu này mô tả cấu trúc thư mục thực tế, kiến trúc đa nền tảng (**macOS & Windows**), thiết kế từng module và lộ trình phát triển tiếp theo của dự án **Roblox Ball Autoplay**.
 
 ---
 
-## 1. Cấu trúc thư mục đề xuất
+## 1. Cấu trúc thư mục hiện tại
 
 ```text
 roblox-ball-autoplay/
-├── README.md                       # Hướng dẫn cài đặt, cấp quyền macOS và sử dụng nhanh
+├── README.md                       # Hướng dẫn sử dụng nhanh (make ui trên macOS / python app.py trên Windows)
 ├── ARCHITECTURE.md                 # Tài liệu kiến trúc & quản lý dự án (file này)
-├── pyproject.toml                  # Quản lý dependencies, metadata, entrypoint CLI/App
+├── CONTRIBUTING.md                 # Quy tắc Conventional Commits & quản lý Git
+├── Makefile                        # Các lệnh shortcut trên macOS (make ui, make ranked, make test...)
+├── pyproject.toml                  # Metadata & entrypoint gói Python
+├── requirements.txt                # Dependencies gọn nhẹ (numpy, Pillow) cho cả macOS & Windows
+├── app.py                          # Entrypoint mở nhanh giao diện Web UI (`python3 app.py`)
+├── autoplay.py                     # Entrypoint chạy chế độ CLI (`python3 autoplay.py`)
 │
-├── profiles/                       # Cấu hình từng chế độ treo (1 file = 1 chế độ)
-│   ├── schema.json                 # Schema chuẩn để validate các file profile
-│   ├── default_play.json           # Chế độ hiện tại (\ -> Down x3 -> Right -> Enter -> Popup -> \)
-│   ├── ranked_mode.json            # Ví dụ: chế độ treo Ranked
-│   └── event_farm.json             # Ví dụ: chế độ treo Event
+├── config/                         # Dữ liệu cấu hình game dùng chung
+│   └── ball_rankings.json          # Bảng xếp hạng Tier List (S/A/B/C) & điểm ưu tiên từng trái bóng
+│
+├── profiles/                       # Cấu hình từng chế độ treo (1 file JSON = 1 chế độ)
+│   ├── schema.json                 # JSON Schema chuẩn để validate các file profile
+│   ├── default_play.json           # Chế độ thường ở Lobby (nhận diện nút Play xanh -> 2 bước popup)
+│   ├── ranked.json                 # Chế độ Ranked (Play Again Game Result + Spectating + Ban/Pick OCR)
+│   └── timer_fullscreen.json       # Chế độ Timer không chụp màn hình (chạy xuyên Fullscreen / Space khác)
+│
+├── docs/
+│   └── assets/                     # Ảnh động GIF minh họa cho README (ui_demo, lobby_demo, roblox_demo)
 │
 ├── src/
 │   └── roblox_autoplay/
 │       ├── __init__.py
-│       ├── cli.py                  # Entrypoint dòng lệnh (chạy theo profile, test-keys, check-once)
+│       ├── cli.py                  # Giao diện dòng lệnh (--profile, --list-profiles, --test-ball-ocr...)
 │       │
-│       ├── core/                   # Tầng hệ điều hành macOS & vòng lặp điều khiển
-│       │   ├── permissions.py      # Kiểm tra quyền Accessibility & Screen Recording
-│       │   ├── macos_window.py     # Tìm PID, CGWindowID, chụp cửa sổ ngầm (screencapture)
-│       │   ├── macos_input.py      # Gửi phím ngầm qua CGEventPostToPid + human jitter
-│       │   ├── profile_loader.py   # Đọc & validate file JSON trong thư mục profiles/
-│       │   ├── anti_afk.py         # Logic chống kick AFK 20 phút
-│       │   └── engine.py           # Vòng lặp chính (State Machine: IDLE -> LOBBY -> IN_MATCH)
+│       ├── core/                   # Tầng hệ điều hành (macOS/Windows) & vòng lặp điều khiển
+│       │   ├── backend.py          # Bộ điều phối đa nền tảng (tự chọn macOS CoreGraphics hoặc Windows Win32)
+│       │   ├── permissions.py      # Kiểm tra quyền Accessibility & Screen Recording (macOS)
+│       │   ├── macos_window.py     # Tìm PID, CGWindowID (bỏ cửa sổ ẩn 500x500), chụp ngầm screencapture
+│       │   ├── macos_input.py      # Gửi phím ngầm trực tiếp vào PID qua CGEventPostToPid + jitter
+│       │   ├── win_window.py       # Tìm RobloxPlayerBeta.exe, chụp PrintWindow, chống Sleep Win32
+│       │   ├── win_input.py        # Gửi phím ngầm vào HWND qua PostMessageW (VK + scan code)
+│       │   ├── profile_loader.py   # Đọc, validate và lưu file JSON trong profiles/
+│       │   ├── anti_afk.py         # Module chống AFK (hiện tắt mặc định trong các profile)
+│       │   └── engine.py           # AutoPlayEngine (State Machine, Ban/Pick OCR, tự đồng bộ UI Nav, file log)
 │       │
 │       ├── vision/                 # Nhận diện hình ảnh từ cửa sổ game
-│       │   ├── play_button.py      # Nhận diện nút Play (màu + hình học + chữ trắng)
-│       │   ├── screen_state.py     # Phân loại trạng thái màn hình (Lobby / Popup / In-Match / Result)
-│       │   └── ball_detector.py    # Cắt ROI & nhận diện các loại bóng đang có trên màn hình
+│       │   ├── play_button.py      # Nhận diện nút Play / Play Again theo ROI, màu xanh & chữ trắng
+│       │   └── ui_nav.py           # Nhận diện khung sáng UI Navigation ở nút Sticker góc dưới phải
 │       │
-│       ├── ml/                     # Pipeline dữ liệu & train model chọn loại bóng
-│       │   ├── collector.py        # Tự động lưu ảnh + log kết quả trận (win/loss, map, bóng đã chọn)
-│       │   ├── dataset.py          # Tiền xử lý, gán nhãn, chia train/val
-│       │   ├── train_selector.py   # Huấn luyện model dự đoán loại bóng tối ưu
-│       │   └── predictor.py        # Load model đã train để gợi ý / tự chọn bóng lúc chạy thật
+│       ├── ml/                     # Nhận diện OCR, xếp hạng & chọn bóng tự động
+│       │   └── ball_selector.py    # Apple Vision OCR (biên dịch swiftc -O) + Windows WinRT OCR + Ban/Pick parser
 │       │
-│       └── ui/                     # Giao diện người dùng & đóng gói macOS App
-│           ├── menubar_app.py      # App chạy trên thanh Menu Bar macOS (bật/tắt, chọn mode nhanh)
-│           ├── settings_window.py  # Cửa sổ cài đặt profile, xem log realtime, test nhận diện
-│           └── assets/             # Icon app (.icns), hình minh họa
+│       └── ui/                     # Giao diện Web UI cục bộ (không cần thư viện GUI ngoài)
+│           ├── web_app.py          # ThreadingHTTPServer localhost (127.0.0.1:8765) + AppController
+│           ├── static/
+│           │   └── index.html      # Giao diện kính mờ dạt 2 bên, chọn chế độ, chỉnh profile & xem log
+│           └── assets/             # Ảnh nền avatar (ui_background.jpg) và banner
 │
-├── data/                           # (Gitignored) Dữ liệu thu thập phục vụ train & debug
-│   ├── raw/                        # Ảnh chụp thô theo từng phiên chơi
-│   ├── labeled/                    # Ảnh đã phân loại theo tên bóng / trạng thái màn hình
-│   └── match_logs.jsonl            # Nhật ký từng trận (thời gian, mode, bóng chọn, kết quả)
+├── scripts/                        # Script tiện ích phục vụ test & dò giao diện
+│   ├── test_bg_key.py              # Script kiểm tra nhanh gửi phím ngầm cơ bản
+│   └── ui_explorer.py              # Chụp liên tục 1 round (`watch`) & dò từng phím UI Navigation (`nav`)
 │
-├── models/                         # (Gitignored hoặc Git LFS) Trọng số model đã train
-│   └── ball_selector_v1.onnx       # Model nhẹ để inference nhanh trên CPU/Apple Silicon
-│
-├── scripts/                        # Script tiện ích (test nhanh, build .app)
-│   ├── test_bg_key.py              # Script test gửi phím ngầm cơ bản (hiện có)
-│   └── build_macos_app.sh          # Đóng gói thành RobloxAutoplay.app
-│
-└── tests/                          # Unit test (test detector trên ảnh mẫu, test parser profile)
-    ├── fixtures/                   # Ảnh màn hình mẫu (lobby, popup, in-match)
-    └── test_play_button.py
+├── data/                           # (Gitignored) Log phiên chạy (data/logs/autoplay.log) & ảnh explore
+└── tests/
+    └── test_core.py                # Bộ 18 unit tests (profile, vision, UI Nav, OCR Ban/Pick, Windows VK)
 ```
-
-> **Hiện trạng hiện tại:** Dự án đã hoàn thành **Phase 2** — tách toàn bộ code vào `src/roblox_autoplay/`, quản lý nhiều chế độ qua `profiles/*.json`, có bộ unit test trong `tests/`, và sẵn sàng bước sang **Phase 3 (Menu Bar / GUI App)**.
 
 ---
 
@@ -75,94 +73,46 @@ roblox-ball-autoplay/
 
 ```mermaid
 flowchart LR
-    A["macos_window.py\n(Chụp cửa sổ ngầm)"] --> B["vision/\n(Nhận diện màn hình & nút)"]
-    B --> C["core/engine.py\n(State Machine)"]
-    P["profiles/*.json\n(Chế độ treo & UI Nav)"] --> C
-    M["ml/predictor.py\n(Chọn loại bóng tối ưu)"] --> C
-    C --> D["macos_input.py\n(Gửi phím ngầm qua PID)"]
-    C --> L["ml/collector.py\n(Ghi log trận & ảnh)"]
-    UI["ui/ (Menu Bar / GUI App)"] <--> C
+    WIN["core/backend.py\n(macOS CoreGraphics / Windows Win32)"] --> VIS["vision/\n(play_button + ui_nav)"]
+    WIN --> OCR["ml/ball_selector.py\n(Apple Vision / WinRT OCR)"]
+    CFG["config/ball_rankings.json\n(Tier List bóng)"] --> OCR
+    PROF["profiles/*.json\n(Chế độ & UI Navigation)"] --> ENG["core/engine.py\n(AutoPlayEngine)"]
+    VIS --> ENG
+    OCR --> ENG
+    ENG --> INP["core/backend.py\n(Gửi phím ngầm vào Roblox)"]
+    ENG --> LOG["data/logs/autoplay.log"]
+    UI["ui/web_app.py + index.html\n(Web UI 127.0.0.1:8765)"] <--> ENG
 ```
 
 ---
 
 ## 3. Quản lý nhiều chế độ treo bằng `profiles/*.json`
 
-Thay vì hardcode phím bấm trong Python, **mỗi chế độ treo sẽ là 1 file JSON riêng**. Khi game đổi UI hoặc bạn muốn thêm chế độ mới, chỉ cần tạo/sửa file JSON mà không đụng vào code core.
-
-Ví dụ `profiles/default_play.json`:
-
-```json
-{
-  "id": "default_play",
-  "name": "Chế độ mặc định (Play + Popup)",
-  "detector": {
-    "type": "green_play_button",
-    "roi": [0.30, 0.84, 0.70, 0.995],
-    "min_green_ratio": 0.60
-  },
-  "timing": {
-    "scan_interval_sec": 3.0,
-    "cooldown_sec": 12.0,
-    "step_delay_sec": 0.22
-  },
-  "sequence": [
-    "backslash",
-    "down", "down", "down", "right", "enter",
-    "wait:0.8",
-    "down", "enter",
-    "wait:0.3",
-    "backslash"
-  ],
-  "anti_afk": {
-    "enabled": true,
-    "interval_sec": 480,
-    "key": "space"
-  },
-  "ball_selection": {
-    "enabled": false,
-    "strategy": "fixed",
-    "model_path": null
-  }
-}
-```
+Mỗi chế độ treo là 1 file JSON độc lập trong `profiles/` (validate theo [profiles/schema.json](profiles/schema.json)):
+- **`detector`**: chọn giữa `green_play_button` (nhận diện theo vùng `roi` tương đối, không phụ thuộc kích thước cửa sổ) hoặc `timer` (chạy định kỳ không cần chụp màn hình).
+- **`extra_triggers`**: hỗ trợ nhiều vị trí nút trong cùng 1 chế độ, mỗi vị trí có thể gắn chuỗi phím riêng (ví dụ trong `ranked.json`: nút `Play Again` ở *Game Result* dùng `\` → `↓` ×9 → `Enter`, còn ở *Spectating* góc dưới trái dùng `\` → `←` → `Enter`).
+- **`ball_selection`**: bật/tắt OCR tự động **Ban bóng mạnh nhất của đối thủ** (`ban_slot_sequences`: 3 ô `0/1/2`) và **Pick bóng mạnh nhất của bạn** (`pick_slot_sequences`: 2 ô `0/1`), kèm cơ chế tự kiểm tra trạng thái UI Navigation qua `vision/ui_nav.py` để tránh ngược bật/tắt phím `\`.
 
 ---
 
-## 4. Thiết kế phần App có giao diện (macOS)
+## 4. Kiến trúc đa nền tảng (`core/backend.py` & `ml/ball_selector.py`)
 
-Vì tool chạy ngầm trên macOS và cần thao tác nhanh trong lúc làm việc, thiết kế gọn nhẹ nhất gồm:
-
-- **Menu Bar App** (biểu tượng nhỏ trên thanh trên cùng của macOS):
-  - Hiển thị trạng thái nhanh: `Đang chạy (12 trận)` / `Đang dừng` / `Chờ Roblox`.
-  - Chọn nhanh **Chế độ treo** (tự động liệt kê các file trong `profiles/`).
-  - Nút **Start / Pause**, **Test phím**, **Mở cửa sổ Cài đặt & Log**.
-- **Công nghệ gợi ý:**
-  - *Nhanh & đồng bộ 100% Python:* `rumps` (Menu Bar) + `PySide6` hoặc `CustomTkinter` (cửa sổ Settings/Profile editor), đóng gói `.app` bằng `py2app` hoặc `PyInstaller`.
-  - *Đẹp chuẩn native macOS:* SwiftUI làm vỏ giao diện + gọi Python engine chạy nền qua IPC/stdout.
-- **Lưu ý bảo mật macOS khi đóng gói `.app`:** Cần ký cục bộ (`codesign --deep --force -s -`) để macOS nhớ quyền **Accessibility** và **Screen Recording** cho app thay vì hỏi lại mỗi lần cập nhật.
-
----
-
-## 5. Thiết kế phần Train & Chọn loại bóng (`ml/`)
-
-Bài toán chọn loại bóng phù hợp nên chia thành **2 lớp độc lập** để dễ train và đạt độ chính xác cao:
-
-1. **Lớp 1 — Nhận diện ngữ cảnh (Computer Vision):**
-   - Thu thập ảnh từ `collector.py` lúc ở màn hình chọn bóng / vào trận / kết thúc trận.
-   - Nhận diện các đặc trưng quan trọng: *bản đồ (map) nào*, *chế độ chơi*, *các loại bóng đang mở khóa/hiển thị*, và *kết quả trận (Win / Lose / Điểm thưởng)*.
-2. **Lớp 2 — Chọn loại bóng tối ưu (Decision / Recommendation):**
-   - **Bước đầu (Thu thập dữ liệu):** Ghi toàn bộ lịch sử vào `data/match_logs.jsonl` dạng `{timestamp, mode, map, ball_chosen, result, duration}`.
-   - **Bước huấn luyện:** Dùng thuật toán phân loại / hồi quy nhẹ (như LightGBM, Random Forest hoặc Contextual Bandit) để dự đoán xác suất thắng / hiệu quả farm của từng loại bóng theo từng ngữ cảnh.
-   - **Bước chạy thật:** `predictor.py` đọc trạng thái hiện tại → chọn loại bóng điểm cao nhất → ánh xạ sang chuỗi phím UI Navigation để đổi bóng trước khi bấm `Play`.
-
----
-
-## 6. Lộ trình phát triển (Roadmap)
-
-| Phase | Mục tiêu chính | Kết quả đạt được |
+| Thành phần | macOS (`darwin`) | Windows 10/11 (`win32`) |
 | :--- | :--- | :--- |
-| **Phase 1 (Hiện tại)** | Core chạy ngầm cho 1 chế độ | [autoplay.py](file:///Users/sanghoang211231/Documents/Project/Personal%20Project/roblox-ball-autoplay/autoplay.py) chạy ổn định, bấm đúng chuỗi 2 cửa sổ & tắt UI Nav |
-| **Phase 2** | Refactor sang `src/` + hệ thống `profiles/` | Hỗ trợ nhiều chế độ treo khác nhau bằng file JSON, có unit test trên ảnh mẫu |
-| **Phase 3** | Xây dựng GUI & đóng gói `.app` | Bật/tắt từ Menu Bar macOS, chọn chế độ, xem số trận & log trực quan |
-| **Phase 4** | Thu thập dữ liệu & Train chọn bóng | Tự ghi log thắng/thua theo loại bóng, train model và tự động đổi bóng tối ưu |
+| **Tìm cửa sổ & Chụp ngầm** | `CGWindowListCopyWindowInfo` + `screencapture -l` (`macos_window.py`) | `EnumWindows` + `PrintWindow(PW_RENDERFULLCONTENT)` (`win_window.py`) |
+| **Gửi phím ngầm** | `CGEventPostToPid` (`macos_input.py`) | `PostMessageW` (`WM_KEYDOWN`/`WM_KEYUP` + scan code) (`win_input.py`) |
+| **Chống Sleep / Khóa màn** | `caffeinate -di` (qua `Makefile`) | `SetThreadExecutionState` tự động trong `engine.py` |
+| **OCR Ban/Pick bóng** | Apple Vision (`swiftc -O` biên dịch cache ~0.28s/lần) | Windows WinRT OCR (`Windows.Media.Ocr.OcrEngine`) |
+| **Giao diện điều khiển** | Web UI cục bộ (`make ui`) | Web UI cục bộ (`python app.py`) |
+
+---
+
+## 5. Lộ trình phát triển (Roadmap)
+
+| Phase | Mục tiêu chính | Trạng thái |
+| :--- | :--- | :--- |
+| **Phase 1** | Core gửi phím ngầm + nhận diện nút `Play` chạy nền trên macOS | ✅ Hoàn thành |
+| **Phase 2** | Refactor sang `src/`, quản lý nhiều chế độ `profiles/*.json`, `Makefile` & unit test | ✅ Hoàn thành |
+| **Phase 3** | Giao diện Web UI kính mờ chọn chế độ, chỉnh profile, xem log realtime & hỗ trợ Windows | ✅ Hoàn thành |
+| **Phase 4a** | OCR gốc đọc màn hình Ranked + bảng Tier List tự động **Ban & Pick bóng** + tự đồng bộ UI Nav | ✅ Hoàn thành |
+| **Phase 4b (Tiếp theo)** | Tự đọc màn hình *Game Result* ghi log Win/Loss vào `data/match_logs.jsonl` để tự học & cập nhật điểm bóng theo tài khoản + tự Reconnect khi mất mạng | ⏳ Đang mở rộng |
