@@ -60,6 +60,11 @@ class TestProfileLoader(unittest.TestCase):
         self.assertEqual(prof.sequence.count("down"), 9)
         self.assertEqual(prof.sequence[0], "backslash")
         self.assertEqual(prof.sequence[-1], "backslash")
+        self.assertEqual(len(prof.extra_triggers), 1)
+        self.assertEqual(
+            prof.extra_triggers[0].sequence,
+            ["backslash", "left", "enter", "wait:0.3", "backslash"],
+        )
 
     def test_invalid_key_raises(self) -> None:
         with self.assertRaises(ValueError):
