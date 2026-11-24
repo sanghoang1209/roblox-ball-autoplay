@@ -20,17 +20,15 @@ Tool tự động treo game **Ball VS Ball (Roblox)** **chạy ngầm 100%** tr�
 ### 🪟 Trên Windows (10 bản 1809+ / Windows 11)
 1. Cài **Python 3.10+** từ [python.org](https://www.python.org/downloads/) *(bắt buộc tích chọn **Add Python to PATH** ở màn hình cài đặt đầu tiên)*.
 2. Dùng bản **Roblox Player tải từ trang chủ [roblox.com](https://www.roblox.com/)** *(không dùng bản cài từ Microsoft Store)*.
-3. Chọn **1 trong 2 cách** để mở giao diện:
-   - **Cách 1 (1 click):** Bấm đúp file **`run_windows.bat`** — tự cài thư viện trong `requirements.txt` và mở thẳng giao diện! *(Nếu Windows SmartScreen hiện cảnh báo, bấm **More info → Run anyway**.)*
-   - **Cách 2 (chạy trong PowerShell hoặc CMD):**
-     ```powershell
-     pip install -r requirements.txt
-     python app.py
-     ```
+3. Mở **PowerShell** hoặc **Command Prompt (CMD)** trong thư mục dự án và chạy:
+   ```powershell
+   pip install -r requirements.txt
+   python app.py
+   ```
 
 #### Lưu ý riêng cho Windows (tránh lỗi thường gặp)
 - **Không thu nhỏ (Minimize) & không bấm `F11` Fullscreen:** Để Roblox ở chế độ cửa sổ bình thường (có thể mở Chrome/Edge che kín đè lên thoải mái, nhưng đừng bấm dấu `-` thu nhỏ xuống Taskbar).
-- **Quyền Administrator:** Nếu máy bạn đang mở Roblox bằng *Run as administrator*, hãy chuột phải vào `run_windows.bat` (hoặc mở PowerShell) bằng **Run as administrator**.
+- **Quyền Administrator:** Nếu máy bạn đang mở Roblox bằng *Run as administrator*, hãy mở PowerShell/CMD bằng **Run as administrator**.
 - **Bố cục bàn phím:** Nên để layout **English (US)** để phím `\` bật UI Navigation trong Roblox hoạt động đúng.
 - **OCR tự Ban & Pick bóng (chế độ Ranked):** Cần có gói ngôn ngữ **English (United States)** trong *Settings → Time & Language → Language* (mặc định Windows 10/11 có sẵn; một số bản Windows rút gọn/LTSC cần cài thêm gói tiếng Anh nếu muốn dùng OCR Ranked).
 - **Chống ngủ màn hình:** Tool tự giữ Windows không tự Sleep/tắt màn hình trong lúc đang chạy nút **Bắt đầu**.
