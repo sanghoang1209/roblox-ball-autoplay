@@ -9,11 +9,13 @@ from pathlib import Path
 from typing import Callable
 
 from roblox_autoplay.core.anti_afk import AntiAfkTracker
-from roblox_autoplay.core.macos_input import run_key_sequence, send_bg_key
-from roblox_autoplay.core.macos_window import (
+from roblox_autoplay.core.backend import (
     capture_window,
     find_roblox_pid,
     find_roblox_window_id,
+    run_key_sequence,
+    send_bg_key,
+    set_keep_awake,
 )
 from roblox_autoplay.core.profile_loader import Profile
 from roblox_autoplay.ml.ball_selector import (
@@ -287,6 +289,7 @@ class AutoPlayEngine:
         self._log("   Nhấn Ctrl+C để dừng.")
 
         try:
+            set_keep_awake(True)
             if is_timer_mode:
                 self._log("👉 Bắt đầu gửi chuỗi đầu tiên sau 3 giây...")
                 self._sleep(3.0)
@@ -433,5 +436,6 @@ class AutoPlayEngine:
         except KeyboardInterrupt:
             pass
         finally:
+            set_keep_awake(False)
             self._set_state("STOPPED")
             self._log(f"👋 Đã dừng tool. Tổng số lần bấm Play: {self.play_count}")

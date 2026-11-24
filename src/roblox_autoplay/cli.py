@@ -6,14 +6,15 @@ import argparse
 import sys
 import time
 
-from roblox_autoplay.core.engine import AutoPlayEngine, default_logger
-from roblox_autoplay.core.macos_input import run_key_sequence, validate_sequence_tokens
-from roblox_autoplay.core.macos_window import (
+from roblox_autoplay.core.backend import (
     capture_window,
+    check_permissions,
     find_roblox_pid,
     find_roblox_window_id,
+    run_key_sequence,
+    validate_sequence_tokens,
 )
-from roblox_autoplay.core.permissions import check_permissions
+from roblox_autoplay.core.engine import AutoPlayEngine, default_logger
 from roblox_autoplay.core.profile_loader import list_profiles, resolve_profile
 from roblox_autoplay.ml.ball_selector import (
     BallSelector,

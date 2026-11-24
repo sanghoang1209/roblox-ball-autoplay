@@ -25,14 +25,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from roblox_autoplay.core.macos_input import send_bg_key, validate_sequence_tokens  # noqa: E402
-from roblox_autoplay.core.macos_window import (  # noqa: E402
+from roblox_autoplay.core.backend import (  # noqa: E402
     capture_window,
+    check_permissions,
     find_roblox_pid,
     find_roblox_window_id,
+    send_bg_key,
+    validate_sequence_tokens,
 )
-from roblox_autoplay.core.permissions import check_permissions  # noqa: E402
-from roblox_autoplay.ml.ball_selector import ocr_image_macos  # noqa: E402
+from roblox_autoplay.ml.ball_selector import ocr_image as ocr_image_macos  # noqa: E402
 
 
 def _make_session_dir(prefix: str) -> Path:

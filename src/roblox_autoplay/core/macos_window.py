@@ -5,12 +5,10 @@ from __future__ import annotations
 import ctypes
 import os
 import subprocess
+import sys
 import tempfile
 
 from PIL import Image
-
-_cg = ctypes.CDLL("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics")
-_cf = ctypes.CDLL("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation")
 
 
 class _CGPoint(ctypes.Structure):
@@ -25,32 +23,39 @@ class _CGRect(ctypes.Structure):
     _fields_ = [("origin", _CGPoint), ("size", _CGSize)]
 
 
-_cg.CGWindowListCopyWindowInfo.argtypes = [ctypes.c_uint32, ctypes.c_uint32]
-_cg.CGWindowListCopyWindowInfo.restype = ctypes.c_void_p
+if sys.platform == "darwin":
+    _cg = ctypes.CDLL("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics")
+    _cf = ctypes.CDLL("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation")
 
-_cg.CGRectMakeWithDictionaryRepresentation.argtypes = [
-    ctypes.c_void_p,
-    ctypes.POINTER(_CGRect),
-]
-_cg.CGRectMakeWithDictionaryRepresentation.restype = ctypes.c_bool
+    _cg.CGWindowListCopyWindowInfo.argtypes = [ctypes.c_uint32, ctypes.c_uint32]
+    _cg.CGWindowListCopyWindowInfo.restype = ctypes.c_void_p
 
-_cf.CFArrayGetCount.argtypes = [ctypes.c_void_p]
-_cf.CFArrayGetCount.restype = ctypes.c_long
+    _cg.CGRectMakeWithDictionaryRepresentation.argtypes = [
+        ctypes.c_void_p,
+        ctypes.POINTER(_CGRect),
+    ]
+    _cg.CGRectMakeWithDictionaryRepresentation.restype = ctypes.c_bool
 
-_cf.CFArrayGetValueAtIndex.argtypes = [ctypes.c_void_p, ctypes.c_long]
-_cf.CFArrayGetValueAtIndex.restype = ctypes.c_void_p
+    _cf.CFArrayGetCount.argtypes = [ctypes.c_void_p]
+    _cf.CFArrayGetCount.restype = ctypes.c_long
 
-_cf.CFDictionaryGetValue.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
-_cf.CFDictionaryGetValue.restype = ctypes.c_void_p
+    _cf.CFArrayGetValueAtIndex.argtypes = [ctypes.c_void_p, ctypes.c_long]
+    _cf.CFArrayGetValueAtIndex.restype = ctypes.c_void_p
 
-_cf.CFStringCreateWithCString.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_uint32]
-_cf.CFStringCreateWithCString.restype = ctypes.c_void_p
+    _cf.CFDictionaryGetValue.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+    _cf.CFDictionaryGetValue.restype = ctypes.c_void_p
 
-_cf.CFNumberGetValue.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p]
-_cf.CFNumberGetValue.restype = ctypes.c_bool
+    _cf.CFStringCreateWithCString.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_uint32]
+    _cf.CFStringCreateWithCString.restype = ctypes.c_void_p
 
-_cf.CFRelease.argtypes = [ctypes.c_void_p]
-_cf.CFRelease.restype = None
+    _cf.CFNumberGetValue.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p]
+    _cf.CFNumberGetValue.restype = ctypes.c_bool
+
+    _cf.CFRelease.argtypes = [ctypes.c_void_p]
+    _cf.CFRelease.restype = None
+else:
+    _cg = None
+    _cf = None
 
 _K_CF_STRING_ENCODING_UTF8 = 0x08000100
 _K_CF_NUMBER_SINT32_TYPE = 3

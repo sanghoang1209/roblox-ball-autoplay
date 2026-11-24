@@ -4,20 +4,25 @@ from __future__ import annotations
 
 import ctypes
 import random
+import sys
 import time
 from typing import Callable
 
-_cg = ctypes.CDLL("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics")
-_cf = ctypes.CDLL("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation")
+if sys.platform == "darwin":
+    _cg = ctypes.CDLL("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics")
+    _cf = ctypes.CDLL("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation")
 
-_cg.CGEventCreateKeyboardEvent.argtypes = [ctypes.c_void_p, ctypes.c_uint16, ctypes.c_bool]
-_cg.CGEventCreateKeyboardEvent.restype = ctypes.c_void_p
+    _cg.CGEventCreateKeyboardEvent.argtypes = [ctypes.c_void_p, ctypes.c_uint16, ctypes.c_bool]
+    _cg.CGEventCreateKeyboardEvent.restype = ctypes.c_void_p
 
-_cg.CGEventPostToPid.argtypes = [ctypes.c_int32, ctypes.c_void_p]
-_cg.CGEventPostToPid.restype = None
+    _cg.CGEventPostToPid.argtypes = [ctypes.c_int32, ctypes.c_void_p]
+    _cg.CGEventPostToPid.restype = None
 
-_cf.CFRelease.argtypes = [ctypes.c_void_p]
-_cf.CFRelease.restype = None
+    _cf.CFRelease.argtypes = [ctypes.c_void_p]
+    _cf.CFRelease.restype = None
+else:
+    _cg = None
+    _cf = None
 
 # macOS Virtual Keycodes (<HIToolbox/Events.h>)
 KEYCODES: dict[str, int] = {
