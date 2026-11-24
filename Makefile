@@ -1,7 +1,8 @@
 PYTHON ?= python3
 PROFILE ?= default_play
+KEYS ?= backslash,left,up,left,left,right,enter,down,backslash
 
-.PHONY: help ui ui-plain run ranked timer profiles check test-keys test clean
+.PHONY: help ui ui-plain run ranked timer profiles check test-keys explore-watch explore-nav test clean
 
 help: ## Hiển thị danh sách lệnh nhanh
 	@echo "🎮 Roblox Ball Autoplay — Lệnh nhanh (Makefile)"
@@ -33,6 +34,12 @@ check: ## Kiểm tra nhanh nhận diện nút Play (1 lần)
 
 test-keys: ## Test gửi chuỗi phím ngầm (đếm ngược 4 giây)
 	$(PYTHON) autoplay.py --profile $(PROFILE) --test-keys
+
+explore-watch: ## Ghi lại toàn bộ màn hình 1 round (Check -> Ban -> Pick) + OCR
+	$(PYTHON) scripts/ui_explorer.py watch --duration 35 --interval 1.0
+
+explore-nav: ## Dò từng bước UI Navigation và chụp ảnh sau mỗi phím
+	$(PYTHON) scripts/ui_explorer.py nav --keys "$(KEYS)" --delay 0.45 --countdown 2
 
 test: ## Chạy toàn bộ unit tests
 	$(PYTHON) -m unittest discover -s tests -v
