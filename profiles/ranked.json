@@ -31,7 +31,7 @@
   "timing": {
     "scan_interval_sec": 3.0,
     "cooldown_sec": 180.0,
-    "step_delay_sec": 0.20
+    "step_delay_sec": 0.28
   },
   "sequence": [
     "backslash",
@@ -54,8 +54,20 @@
     "key": "space"
   },
   "ball_selection": {
-    "enabled": false,
-    "strategy": "fixed",
-    "model_path": null
+    "enabled": true,
+    "strategy": "ranking_ocr",
+    "model_path": null,
+    "rankings_path": "config/ball_rankings.json",
+    "ban_cooldown_sec": 28.0,
+    "pick_cooldown_sec": 22.0,
+    "ban_slot_sequences": {
+      "0": ["left", "left", "enter", "wait:0.3", "down", "enter"],
+      "1": ["left", "enter", "wait:0.3", "down", "enter"],
+      "2": ["left", "right", "enter", "wait:0.3", "down", "enter"]
+    },
+    "pick_slot_sequences": {
+      "0": ["left", "left", "enter", "wait:0.3", "down", "enter"],
+      "1": ["left", "enter", "wait:0.3", "down", "enter"]
+    }
   }
 }

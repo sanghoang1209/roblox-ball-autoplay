@@ -18,7 +18,13 @@ from roblox_autoplay.core.profile_loader import (  # noqa: E402
     parse_profile_dict,
     resolve_profile,
 )
+from roblox_autoplay.ml.ball_selector import (  # noqa: E402
+    BallSelector,
+    OcrToken,
+    parse_ball_selection_screen,
+)
 from roblox_autoplay.vision.play_button import detect_play_button  # noqa: E402
+from roblox_autoplay.vision.ui_nav import is_sticker_highlighted  # noqa: E402
 
 
 def _make_synthetic_lobby(width: int = 1024, height: int = 665, with_button: bool = True) -> Image.Image:
@@ -112,6 +118,14 @@ class TestPlayButtonDetector(unittest.TestCase):
         res = detect_play_button(img)
         self.assertFalse(res.found)
 
+    def test_sticker_highlight_detection(self) -> None:
+        dark = Image.new("RGB", (1024, 665), (20, 25, 35))
+        self.assertFalse(is_sticker_highlighted(dark))
+        highlighted = dark.copy()
+        draw = ImageDraw.Draw(highlighted)
+        draw.rectangle([955, 600, 1018, 660], outline=(245, 250, 255), width=6)
+        self.assertTrue(is_sticker_highlighted(highlighted))
+
 
 class TestAntiAfkTracker(unittest.TestCase):
     def test_due_and_reset(self) -> None:
@@ -124,6 +138,65 @@ class TestAntiAfkTracker(unittest.TestCase):
     def test_disabled(self) -> None:
         tracker = AntiAfkTracker(AntiAfkConfig(enabled=False, interval_sec=10.0), now=0.0)
         self.assertFalse(tracker.is_due(now=9999.0))
+
+
+class TestBallSelector(unittest.TestCase):
+    def test_picks_highest_tier_ball(self) -> None:
+        selector = BallSelector.from_file()
+        choice = selector.pick_best(["Cactus Ball", "Laser Ball", "Chess"])
+        self.assertIsNotNone(choice)
+        assert choice is not None
+        self.assertEqual(choice.slot_index, 1)
+        self.assertEqual(choice.matched_ball.name, "Laser")
+        self.assertEqual(choice.matched_ball.tier, "S")
+
+    def test_fuzzy_matches_ocr_typo(self) -> None:
+        selector = BallSelector.from_file()
+        match = selector.match_ball("Vamplre Bal")
+        self.assertIsNotNone(match)
+        assert match is not None
+        self.assertEqual(match.name, "Vampire")
+
+    def test_parse_ban_and_pick_screens(self) -> None:
+        selector = BallSelector.from_file()
+
+        # 1. CHECK BOTH SIDES (preview -> should not trigger)
+        preview_tokens = [
+            OcrToken("CHECK BOTH SIDES", 0.455, 0.141, 1.0),
+            OcrToken("WDC", 0.286, 0.676, 1.0),
+            OcrToken("Glass Ball", 0.455, 0.677, 1.0),
+            OcrToken("Dice Ball", 0.623, 0.676, 1.0),
+        ]
+        prev = parse_ball_selection_screen(preview_tokens, selector)
+        self.assertFalse(prev.detected)
+        self.assertEqual(prev.phase, "PREVIEW")
+
+        # 2. BAN OPPONENT'S BALL (3 opponent cards -> ban Electric over Pi & Big Spike)
+        ban_tokens = [
+            OcrToken("BAN OPPONENT'S BALL", 0.456, 0.143, 1.0),
+            OcrToken("Pi Ball", 0.259, 0.360, 1.0),
+            OcrToken("Electric Ball", 0.456, 0.359, 1.0),
+            OcrToken("Big Spike Ball", 0.654, 0.360, 1.0),
+        ]
+        ban = parse_ball_selection_screen(ban_tokens, selector)
+        self.assertTrue(ban.detected)
+        self.assertEqual(ban.phase, "BAN")
+        assert ban.best_choice is not None
+        self.assertEqual(ban.best_choice.slot_index, 1)
+        self.assertEqual(ban.best_choice.matched_ball.name, "Electric")
+
+        # 3. PICK YOUR BALL (2 player cards -> pick Laser over WDC)
+        pick_tokens = [
+            OcrToken("PICK YOUR BALL", 0.455, 0.147, 1.0),
+            OcrToken("Laser Ball", 0.356, 0.550, 1.0),
+            OcrToken("WDC", 0.553, 0.548, 1.0),
+        ]
+        pick = parse_ball_selection_screen(pick_tokens, selector)
+        self.assertTrue(pick.detected)
+        self.assertEqual(pick.phase, "PICK")
+        assert pick.best_choice is not None
+        self.assertEqual(pick.best_choice.slot_index, 0)
+        self.assertEqual(pick.best_choice.matched_ball.name, "Laser")
 
 
 if __name__ == "__main__":

@@ -8,9 +8,18 @@ import time
 
 from roblox_autoplay.core.engine import AutoPlayEngine, default_logger
 from roblox_autoplay.core.macos_input import run_key_sequence, validate_sequence_tokens
-from roblox_autoplay.core.macos_window import find_roblox_pid, find_roblox_window_id
+from roblox_autoplay.core.macos_window import (
+    capture_window,
+    find_roblox_pid,
+    find_roblox_window_id,
+)
 from roblox_autoplay.core.permissions import check_permissions
 from roblox_autoplay.core.profile_loader import list_profiles, resolve_profile
+from roblox_autoplay.ml.ball_selector import (
+    BallSelector,
+    ocr_pil_image,
+    parse_ball_selection_screen,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -77,6 +86,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--test-keys",
         action="store_true",
         help="Đếm ngược 4 giây rồi gửi thử chuỗi phím của profile vào Roblox đang chạy ngầm",
+    )
+    parser.add_argument(
+        "--test-ball-ocr",
+        action="store_true",
+        help="Chụp cửa sổ Roblox 1 lần, chạy OCR đọc 3 ô bóng và gợi ý ô điểm cao nhất",
     )
     parser.add_argument(
         "--dry-run",
@@ -153,6 +167,39 @@ def main(argv: list[str] | None = None) -> None:
             on_log=default_logger,
         )
         default_logger("🎉 Đã gửi xong chuỗi phím test!")
+        return
+
+    if args.test_ball_ocr:
+        pid = find_roblox_pid()
+        if pid is None:
+            print("❌ Không tìm thấy RobloxPlayer đang chạy. Hãy mở game Roblox trước.")
+            sys.exit(1)
+        win_info = find_roblox_window_id(pid)
+        if win_info is None:
+            print("❌ Không tìm thấy cửa sổ chính của RobloxPlayer.")
+            sys.exit(1)
+        wid, (ww, wh) = win_info
+        default_logger(f"✅ Đang chụp & OCR cửa sổ Roblox ({ww}x{wh})...")
+        img = capture_window(wid)
+        selector = BallSelector.from_file()
+        tokens = ocr_pil_image(img)
+        ball_res = parse_ball_selection_screen(tokens, selector)
+        if not ball_res.detected:
+            default_logger(
+                f"❌ Chưa thấy pha BAN/PICK (phase={ball_res.phase}, header={ball_res.header_text!r})."
+            )
+            return
+        default_logger(f"✅ Pha: {ball_res.phase} | Header: {ball_res.header_text!r}")
+        for s in ball_res.slots:
+            tier = s.matched_ball.tier if s.matched_ball else "?"
+            name = s.matched_ball.name if s.matched_ball else "Không rõ"
+            default_logger(f"   Ô {s.slot_index}: {s.raw_text!r} -> {name} (Tier {tier}, điểm {s.score})")
+        if ball_res.best_choice:
+            action = "CẤM (BAN)" if ball_res.phase == "BAN" else "CHỌN (PICK)"
+            default_logger(
+                f"🏆 Quyết định {action}: Ô {ball_res.best_choice.slot_index} "
+                f"({ball_res.best_choice.raw_text}, điểm {ball_res.best_choice.score})"
+            )
         return
 
     engine = AutoPlayEngine(profile=profile, dry_run=args.dry_run)

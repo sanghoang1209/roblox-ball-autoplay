@@ -39,6 +39,11 @@ class BallSelectionConfig:
     enabled: bool = False
     strategy: str = "fixed"
     model_path: str | None = None
+    rankings_path: str | None = None
+    ban_cooldown_sec: float = 28.0
+    pick_cooldown_sec: float = 22.0
+    ban_slot_sequences: dict[str, list[str]] = field(default_factory=dict)
+    pick_slot_sequences: dict[str, list[str]] = field(default_factory=dict)
 
 
 @dataclass
@@ -115,11 +120,35 @@ def parse_profile_dict(data: dict, source_path: Path | None = None) -> Profile:
         key=afk_key,
     )
 
+    def _parse_slot_map(raw_map: object, field_name: str) -> dict[str, list[str]]:
+        out: dict[str, list[str]] = {}
+        if isinstance(raw_map, dict):
+            for slot_key, raw_slot_seq in raw_map.items():
+                if not isinstance(raw_slot_seq, list):
+                    raise ValueError(
+                        f"Profile '{profile_id}': ball_selection.{field_name}['{slot_key}'] phải là mảng."
+                    )
+                norm_seq = [str(tok).strip().lower() for tok in raw_slot_seq if str(tok).strip()]
+                validate_sequence_tokens(norm_seq)
+                out[str(slot_key)] = norm_seq
+        return out
+
     ball_raw = data.get("ball_selection", {})
+    ban_slot_sequences = _parse_slot_map(ball_raw.get("ban_slot_sequences", {}), "ban_slot_sequences")
+    pick_slot_sequences = _parse_slot_map(
+        ball_raw.get("pick_slot_sequences", ball_raw.get("slot_sequences", {})),
+        "pick_slot_sequences",
+    )
+
     ball_selection = BallSelectionConfig(
         enabled=bool(ball_raw.get("enabled", False)),
         strategy=str(ball_raw.get("strategy", "fixed")),
         model_path=ball_raw.get("model_path"),
+        rankings_path=ball_raw.get("rankings_path"),
+        ban_cooldown_sec=max(5.0, float(ball_raw.get("ban_cooldown_sec", 28.0))),
+        pick_cooldown_sec=max(5.0, float(ball_raw.get("pick_cooldown_sec", 22.0))),
+        ban_slot_sequences=ban_slot_sequences,
+        pick_slot_sequences=pick_slot_sequences,
     )
 
     extra_triggers: list[TriggerRule] = []
@@ -228,6 +257,11 @@ def profile_to_dict(profile: Profile) -> dict:
             "enabled": profile.ball_selection.enabled,
             "strategy": profile.ball_selection.strategy,
             "model_path": profile.ball_selection.model_path,
+            "rankings_path": profile.ball_selection.rankings_path,
+            "ban_cooldown_sec": profile.ball_selection.ban_cooldown_sec,
+            "pick_cooldown_sec": profile.ball_selection.pick_cooldown_sec,
+            "ban_slot_sequences": {k: list(v) for k, v in profile.ball_selection.ban_slot_sequences.items()},
+            "pick_slot_sequences": {k: list(v) for k, v in profile.ball_selection.pick_slot_sequences.items()},
         },
     }
     if profile.extra_triggers:
