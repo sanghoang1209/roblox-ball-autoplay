@@ -1,7 +1,7 @@
 {
   "id": "timer_fullscreen",
   "name": "Chế độ Timer (Chạy xuyên Fullscreen / Space khác)",
-  "description": "Không chụp màn hình — tự gửi chuỗi UI Navigation mỗi 2 phút, chạy được cả khi Safari hoặc app khác mở Fullscreen.",
+  "description": "Vào lobby chế độ cần chơi rồi bấm \"Bắt đầu\"",
   "detector": {
     "type": "timer"
   },
@@ -24,7 +24,7 @@
     "backslash"
   ],
   "anti_afk": {
-    "enabled": true,
+    "enabled": false,
     "interval_sec": 480,
     "key": "space"
   },

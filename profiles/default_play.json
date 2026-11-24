@@ -1,7 +1,7 @@
 {
   "id": "default_play",
   "name": "Chế độ mặc định (Play + Xác nhận popup)",
-  "description": "Nhận diện nút Play xanh ở đáy giữa màn hình, bấm UI Navigation 2 bước rồi tắt UI Nav.",
+  "description": "Vào lobby chế độ cần chơi rồi bấm \"Bắt đầu\"",
   "detector": {
     "type": "green_play_button",
     "roi": [
@@ -33,7 +33,7 @@
     "backslash"
   ],
   "anti_afk": {
-    "enabled": true,
+    "enabled": false,
     "interval_sec": 480.0,
     "key": "space"
   },

@@ -29,7 +29,7 @@ class TimingConfig:
 
 @dataclass
 class AntiAfkConfig:
-    enabled: bool = True
+    enabled: bool = False
     interval_sec: float = 480.0
     key: str = "space"
 
@@ -115,7 +115,7 @@ def parse_profile_dict(data: dict, source_path: Path | None = None) -> Profile:
     if afk_key not in KEYCODES:
         raise ValueError(f"Profile '{profile_id}': anti_afk.key không hợp lệ ('{afk_key}').")
     anti_afk = AntiAfkConfig(
-        enabled=bool(afk_raw.get("enabled", True)),
+        enabled=bool(afk_raw.get("enabled", False)),
         interval_sec=max(10.0, float(afk_raw.get("interval_sec", 480.0))),
         key=afk_key,
     )
