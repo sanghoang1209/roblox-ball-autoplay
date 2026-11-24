@@ -12,6 +12,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from roblox_autoplay.core.anti_afk import AntiAfkTracker  # noqa: E402
+from roblox_autoplay.core.macos_input import KEYCODES  # noqa: E402
+from roblox_autoplay.core.win_input import WIN_VK_CODES, build_key_lparam  # noqa: E402
 from roblox_autoplay.core.profile_loader import (  # noqa: E402
     AntiAfkConfig,
     list_profiles,
@@ -197,6 +199,19 @@ class TestBallSelector(unittest.TestCase):
         assert pick.best_choice is not None
         self.assertEqual(pick.best_choice.slot_index, 0)
         self.assertEqual(pick.best_choice.matched_ball.name, "Laser")
+
+
+class TestWindowsCompatibility(unittest.TestCase):
+    def test_win_vk_codes_cover_all_keycodes(self) -> None:
+        self.assertEqual(set(WIN_VK_CODES.keys()), set(KEYCODES.keys()))
+
+    def test_win_lparam_flags(self) -> None:
+        down = build_key_lparam(0x4B, is_keyup=False, extended=True)
+        up = build_key_lparam(0x4B, is_keyup=True, extended=True)
+        self.assertTrue(down & (1 << 24))
+        self.assertFalse(down & (1 << 31))
+        self.assertTrue(up & (1 << 30))
+        self.assertTrue(up & (1 << 31))
 
 
 if __name__ == "__main__":
