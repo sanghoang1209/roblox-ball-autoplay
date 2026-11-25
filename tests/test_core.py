@@ -200,6 +200,21 @@ class TestBallSelector(unittest.TestCase):
         self.assertEqual(pick.best_choice.slot_index, 0)
         self.assertEqual(pick.best_choice.matched_ball.name, "Laser")
 
+    def test_new_meta_balls_and_no_false_fuzzy(self) -> None:
+        selector = BallSelector.from_file()
+        self.assertEqual(selector.match_ball("Black Spider Ball").tier, "S")
+        self.assertEqual(selector.match_ball("Math Ball").tier, "A")
+        self.assertEqual(selector.match_ball("Maple Leaf Ball").name, "Maple Leaf")
+        self.assertEqual(selector.match_ball("Poison Gas Ball").name, "Poison Gas")
+        self.assertEqual(selector.match_ball("Poison Gas Ball").tier, "D")
+        self.assertEqual(selector.match_ball("Orbit Ball").name, "Orbital")
+        self.assertEqual(selector.match_ball("Bread Ball").name, "Bread")
+        self.assertEqual(selector.match_ball("Sunshine Ball").name, "Sunshine")
+        self.assertEqual(selector.match_ball("Candy Box Ball").name, "Candy Box")
+        self.assertEqual(selector.match_ball("Mine Ball").name, "Mine")
+        self.assertEqual(selector.match_ball("Thorn Ball").name, "Thorn")
+        self.assertEqual(selector.match_ball("Trident Ball").name, "Trident")
+
 
 class TestWindowsCompatibility(unittest.TestCase):
     def test_win_vk_codes_cover_all_keycodes(self) -> None:

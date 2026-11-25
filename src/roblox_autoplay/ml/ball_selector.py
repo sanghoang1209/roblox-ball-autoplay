@@ -344,12 +344,22 @@ def parse_ball_selection_screen(
             best_choice=None,
         )
 
+    def _is_card_description(text: str) -> bool:
+        stripped = text.strip()
+        if not stripped:
+            return True
+        if stripped.endswith((".", "!", "?")):
+            return True
+        return len(stripped.split()) >= 4
+
     # Kiểm tra pha BAN OPPONENT'S BALL (3 ô đối thủ ở cy ~ 0.36)
     if "BAN" in header_upper:
         slot_raw = ["", "", ""]
         slot_matched: list[BallEntry | None] = [None, None, None]
         for tok in tokens:
             if not (0.30 <= tok.cy <= 0.43 and 0.14 <= tok.cx <= 0.78):
+                continue
+            if _is_card_description(tok.text):
                 continue
             if tok.cx < 0.36:
                 idx = 0
@@ -388,6 +398,8 @@ def parse_ball_selection_screen(
         slot_matched = [None, None]
         for tok in tokens:
             if not (0.49 <= tok.cy <= 0.62 and 0.22 <= tok.cx <= 0.72):
+                continue
+            if _is_card_description(tok.text):
                 continue
             idx = 0 if tok.cx < 0.45 else 1
             entry = selector.match_ball(tok.text)
