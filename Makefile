@@ -2,7 +2,7 @@ PYTHON ?= python3
 PROFILE ?= default_play
 KEYS ?= backslash,left,up,left,left,right,enter,down,backslash
 
-.PHONY: help ui ui-plain run ranked timer profiles check test-keys explore-watch explore-nav test clean
+.PHONY: help ui ui-bg ui-stop ui-plain run ranked timer profiles check test-keys explore-watch explore-nav test clean
 
 help: ## Hiển thị danh sách lệnh nhanh
 	@echo "🎮 Roblox Ball Autoplay — Lệnh nhanh (Makefile)"
@@ -13,6 +13,29 @@ help: ## Hiển thị danh sách lệnh nhanh
 
 ui: ## Mở giao diện Web UI (tự chống Sleep & khóa màn hình)
 	caffeinate -di $(PYTHON) app.py
+
+ui-bg: ## Chạy Web UI ngầm độc lập (tắt Terminal / VS Code vẫn chạy)
+	@mkdir -p data/logs
+	@if [ -f data/ui.pid ] && kill -0 $$(cat data/ui.pid) 2>/dev/null; then \
+		echo "ℹ️  Web UI đã chạy ngầm sẵn (PID: $$(cat data/ui.pid)) -> http://127.0.0.1:8765"; \
+	else \
+		nohup caffeinate -di $(PYTHON) app.py > data/logs/ui_server.log 2>&1 < /dev/null & \
+		echo $$! > data/ui.pid; \
+		sleep 0.6; \
+		echo "✅ Đã chạy Web UI ngầm (PID: $$(cat data/ui.pid)) -> http://127.0.0.1:8765"; \
+		echo "   (Tắt Terminal/VS Code vẫn chạy bình thường. Gõ 'make ui-stop' khi muốn tắt hẳn.)"; \
+	fi
+
+ui-stop: ## Tắt hẳn Web UI đang chạy ngầm
+	@if [ -f data/ui.pid ]; then \
+		PID=$$(cat data/ui.pid); \
+		pkill -P $$PID 2>/dev/null || true; \
+		kill $$PID 2>/dev/null || true; \
+		rm -f data/ui.pid; \
+		echo "🛑 Đã tắt Web UI chạy ngầm (PID: $$PID)."; \
+	else \
+		pkill -f "$(PYTHON) app.py" 2>/dev/null && echo "🛑 Đã tắt tiến trình Web UI." || echo "ℹ️  Không có Web UI nào đang chạy ngầm."; \
+	fi
 
 ui-plain: ## Mở giao diện Web UI (không kèm caffeinate)
 	$(PYTHON) app.py
