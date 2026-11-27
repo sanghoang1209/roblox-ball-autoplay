@@ -13,9 +13,17 @@ Tool tự động treo game **Ball VS Ball (Roblox)** **chạy ngầm 100%** tr�
    - **Accessibility (Trợ năng)**
    - **Screen & System Audio Recording (Ghi màn hình)**
 2. **Mở giao diện điều khiển:**
-   ```bash
-   make ui
-   ```
+   - **Cách nhanh nhất (không cần gõ lệnh):** Bấm đúp file **`scripts/Start Autoplay.command`** *(có thể chuột phải → **Make Alias** rồi kéo ra Desktop/Dock để mở 1 chạm; khi cần tắt hẳn bấm đúp **`scripts/Stop Autoplay.command`**)*.
+   - **Hoặc chạy bằng lệnh trong Terminal:**
+     ```bash
+     # Chạy trực tiếp trong Terminal
+     make ui
+
+     # Hoặc chạy ngầm độc lập (tắt Terminal / VS Code vẫn chạy)
+     make ui-bg
+     # Tắt hẳn khi không dùng nữa:
+     make ui-stop
+     ```
 
 ### 🪟 Trên Windows (10 bản 1809+ / Windows 11)
 1. Cài **Python 3.10+** từ [python.org](https://www.python.org/downloads/) *(bắt buộc tích chọn **Add Python to PATH** ở màn hình cài đặt đầu tiên)*.
